@@ -1,0 +1,5 @@
+# 将以下内容写入 .gitignore
+echo "venv/" >> .gitignore          # 忽略虚拟环境
+echo "__pycache__/" >> .gitignore   # 忽略编译缓存
+echo "*.pyc" >> .gitignore          # 忽略字节码
+echo ".vscode/" >> .gitignore       # 忽略编辑器配置
