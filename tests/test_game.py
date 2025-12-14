@@ -208,7 +208,9 @@ class TestGame:
         crit = 1.0
 
         expected_damage = (
-            base_damage * element_mult * crit
+            base_damage
+            * element_mult
+            * crit
             * game.player.element_damage_bonus
         )
         assert expected_damage == 300.0

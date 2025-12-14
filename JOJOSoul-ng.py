@@ -123,10 +123,16 @@ class Game:
                 "completed": False,
                 "reward": 500,
             },
-            "等级大师": {"description": "达到10级", "completed": False,
-                     "reward": 300},
-            "传奇勇者": {"description": "达到20级", "completed": False,
-                     "reward": 1000},
+            "等级大师": {
+                "description": "达到10级",
+                "completed": False,
+                "reward": 300,
+            },
+            "传奇勇者": {
+                "description": "达到20级",
+                "completed": False,
+                "reward": 1000,
+            },
             "元素大师": {
                 "description": "购买魔法袍",
                 "completed": False,
@@ -171,7 +177,9 @@ class Game:
 
     def set_difficulty(self):
         mode = easygui.choicebox(
-            "选择难度", "难度选择", ["无限金币版", "简单", "普通", "坤难", "炼狱"]
+            "选择难度",
+            "难度选择",
+            ["无限金币版", "简单", "普通", "坤难", "炼狱"],
         )
         if not mode:
             sys.exit()
@@ -249,7 +257,9 @@ class Game:
                 print(f"你使用[{choice}]造成了 {damage:.1f} 点伤害！")
             else:
                 enemy_hp -= damage  # 减去负数等于加血
-                print(f"你的攻击被吸收了！敌人恢复了 {abs(damage):.1f} 点血量！")
+                print(
+                    f"你的攻击被吸收了！敌人恢复了 {abs(damage):.1f} 点血量！"
+                )
 
             # 敌人攻击
             self.player.life -= enemy_atk
@@ -328,7 +338,9 @@ class Game:
             crit = self.get_attack_multiplier()
             if (
                 easygui.buttonbox(
-                    f"离[天国之时]还有 {turn_limit} [天国之刻]", "Heaven", ["阻止他"]
+                    f"离[天国之时]还有 {turn_limit} [天国之刻]",
+                    "Heaven",
+                    ["阻止他"],
                 )
                 is None
             ):
@@ -387,7 +399,9 @@ class Game:
             if damage > 0:
                 print(f"你造成了 {damage:.1f} 点伤害！")
 
-            print(f"敌方血量：{enemy_hp:.1f} | 我方血量：{self.player.life:.1f}")
+            print(
+                f"敌方血量：{enemy_hp:.1f} | 我方血量：{self.player.life:.1f}"
+            )
 
             if not self.player.is_alive():
                 print("你死了！！！")
@@ -510,9 +524,12 @@ class Game:
         if element_choice:
             self.player.temporary_element_boost = 2.0  # 2倍伤害
             self.player.temporary_boost_turns = 3  # 持续3回合
-            print(f"元素卷轴使用成功：{element_choice}伤害临时提升100%，持续3回合！")
+            print(
+                f"元素卷轴使用成功：{element_choice}伤害临时提升100%，持续3回合！"
+            )
             easygui.msgbox(
-                f"{element_choice}伤害临时提升100%，持续3回合！", "元素卷轴效果"
+                f"{element_choice}伤害临时提升100%，持续3回合！",
+                "元素卷轴效果",
             )
 
     def skill_menu(self):
@@ -576,7 +593,9 @@ class Game:
                 self.player.skill_points -= 1
                 skill["level"] += 1
                 print(f"{skill_name}升级到Lv.{skill['level']}！")
-                easygui.msgbox(f"{skill_name}升级到Lv.{skill['level']}！", "升级成功")
+                easygui.msgbox(
+                    f"{skill_name}升级到Lv.{skill['level']}！", "升级成功"
+                )
 
                 # 检查技能新手成就
                 if not self.achievements["技能新手"]["completed"]:
@@ -686,7 +705,10 @@ class Game:
         skills_learned = sum(
             1 for skill in self.player.skills.values() if skill["level"] > 0
         )
-        if skills_learned >= 1 and not self.achievements["技能新手"]["completed"]:
+        if (
+            skills_learned >= 1
+            and not self.achievements["技能新手"]["completed"]
+        ):
             self.complete_achievement("技能新手")
             newly_completed.append("技能新手")
 
@@ -780,9 +802,7 @@ class Game:
             "lmode": self.lmode,
             "amode": self.amode,
             "element_damage_bonus": self.player.element_damage_bonus,
-            "temporary_element_boost": (
-                self.player.temporary_element_boost
-            ),
+            "temporary_element_boost": (self.player.temporary_element_boost),
             "temporary_boost_turns": self.player.temporary_boost_turns,
             "skill_points": self.player.skill_points,
         }
@@ -790,15 +810,13 @@ class Game:
         # 保存技能数据
         for skill_name, skill_data in self.player.skills.items():
             save_data[f"skill_{skill_name}_level"] = skill_data["level"]
-            save_data[f"skill_{skill_name}_cooldown"] = (
-                skill_data["cooldown"]
-            )
+            save_data[f"skill_{skill_name}_cooldown"] = skill_data["cooldown"]
 
         # 保存成就数据
         for achievement_name, achievement_data in self.achievements.items():
-            save_data[f"achievement_{achievement_name}"] = (
-                achievement_data["completed"]
-            )
+            save_data[f"achievement_{achievement_name}"] = achievement_data[
+                "completed"
+            ]
 
         try:
             with open("savegame.dat", "w") as f:
@@ -849,9 +867,7 @@ class Game:
             self.player.temporary_boost_turns = int(
                 save_data.get("temporary_boost_turns", 0)
             )
-            self.player.skill_points = int(
-                save_data.get("skill_points", 0)
-            )
+            self.player.skill_points = int(save_data.get("skill_points", 0))
 
             # 加载技能数据
             for skill_name in self.player.skills.keys():
@@ -881,7 +897,9 @@ class Game:
         time.sleep(1)
 
         # 角色命名
-        player_name = easygui.enterbox("请输入你的名字：", "角色创建", default="勇者")
+        player_name = easygui.enterbox(
+            "请输入你的名字：", "角色创建", default="勇者"
+        )
         if player_name:
             self.player.name = player_name
 
@@ -968,7 +986,13 @@ class Game:
                     120,
                     random.randint(4, 10),
                     100,
-                    {"火焰": 2.0, "水": 0.5, "土地": 0.5, "暗黑魔法": 1.5, "闪光": 1.1},
+                    {
+                        "火焰": 2.0,
+                        "水": 0.5,
+                        "土地": 0.5,
+                        "暗黑魔法": 1.5,
+                        "闪光": 1.1,
+                    },
                 )
             elif action == "山洞":
                 # 吸血鬼
@@ -977,7 +1001,13 @@ class Game:
                     200,
                     18,
                     150,
-                    {"火焰": 1.3, "水": 0.5, "土地": 0.5, "暗黑魔法": 1.5, "闪光": 2.1},
+                    {
+                        "火焰": 1.3,
+                        "水": 0.5,
+                        "土地": 0.5,
+                        "暗黑魔法": 1.5,
+                        "闪光": 2.1,
+                    },
                 )
             elif action == "腐化之地":
                 # 沼泽怪
@@ -986,7 +1016,13 @@ class Game:
                     250,
                     17,
                     200,
-                    {"火焰": 0.3, "水": 1.5, "土地": 2.5, "暗黑魔法": 1.5, "闪光": 0.1},
+                    {
+                        "火焰": 0.3,
+                        "水": 1.5,
+                        "土地": 2.5,
+                        "暗黑魔法": 1.5,
+                        "闪光": 0.1,
+                    },
                 )
             elif action == "熔岩地下城":
                 # 熔岩怪：注意这里火是-2.0(回血)，原代码逻辑复现
@@ -1025,7 +1061,9 @@ class Game:
             elif action == "暗影遗迹":
                 # 需要击败沼泽怪解锁
                 if self.player.monsters_defeated < 3:
-                    easygui.msgbox("需要先击败腐化之地的沼泽怪才能进入！", "条件不足")
+                    easygui.msgbox(
+                        "需要先击败腐化之地的沼泽怪才能进入！", "条件不足"
+                    )
                     continue
                 # 暗影刺客
                 self.battle(
@@ -1044,7 +1082,9 @@ class Game:
             elif action == "风暴高地":
                 # 需要击败熔岩怪解锁
                 if self.player.monsters_defeated < 4:
-                    easygui.msgbox("需要先击败熔岩地下城的熔岩怪才能进入！", "条件不足")
+                    easygui.msgbox(
+                        "需要先击败熔岩地下城的熔岩怪才能进入！", "条件不足"
+                    )
                     continue
                 # 雷电元素
                 self.battle(
@@ -1067,7 +1107,9 @@ class Game:
                     continue
                 # 随机选择一个高级敌人
                 enemy_choice = easygui.choicebox(
-                    "选择挑战的敌人", "古代神殿", ["石像守卫", "古代法师", "神殿骑士"]
+                    "选择挑战的敌人",
+                    "古代神殿",
+                    ["石像守卫", "古代法师", "神殿骑士"],
                 )
                 if enemy_choice == "石像守卫":
                     self.battle(
