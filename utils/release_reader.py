@@ -61,7 +61,7 @@ class ReleaseReader:
             return {}
         
         # Pattern to match version sections
-        version_pattern = r'### v(\d+\.\d+\.\d+) - (.+?) \((\d{4}-\d{2}-\d{2})\)'
+        version_pattern = r'### v([\d\.]+(?:-[\w]+)?) - (.+?) \((\d{4}-\d{2}-\d{2})\)'
         
         # Find all version sections
         matches = list(re.finditer(version_pattern, self.content, re.MULTILINE))
