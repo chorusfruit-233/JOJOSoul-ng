@@ -117,17 +117,35 @@ class TestGame:
         game = Game()
         # 验证新敌人元素倍率设置正确
         # 冰霜巨人：火焰3.0, 水-1.5
-        ice_giant_multipliers = {"火焰": 3.0, "水": -1.5, "土地": 0.8, "暗黑魔法": 1.2, "闪光": 0.5}
+        ice_giant_multipliers = {
+            "火焰": 3.0,
+            "水": -1.5,
+            "土地": 0.8,
+            "暗黑魔法": 1.2,
+            "闪光": 0.5,
+        }
         assert ice_giant_multipliers["火焰"] == 3.0
         assert ice_giant_multipliers["水"] == -1.5
-        
+
         # 暗影刺客：暗黑魔法-2.0, 闪光3.0
-        shadow_assassin_multipliers = {"火焰": 0.5, "水": 0.5, "土地": 0.5, "暗黑魔法": -2.0, "闪光": 3.0}
+        shadow_assassin_multipliers = {
+            "火焰": 0.5,
+            "水": 0.5,
+            "土地": 0.5,
+            "暗黑魔法": -2.0,
+            "闪光": 3.0,
+        }
         assert shadow_assassin_multipliers["暗黑魔法"] == -2.0
         assert shadow_assassin_multipliers["闪光"] == 3.0
-        
+
         # 雷电元素：水2.0, 闪光-1.8
-        lightning_element_multipliers = {"火焰": 1.0, "水": 2.0, "土地": 0.3, "暗黑魔法": 1.5, "闪光": -1.8}
+        lightning_element_multipliers = {
+            "火焰": 1.0,
+            "水": 2.0,
+            "土地": 0.3,
+            "暗黑魔法": 1.5,
+            "闪光": -1.8,
+        }
         assert lightning_element_multipliers["水"] == 2.0
         assert lightning_element_multipliers["闪光"] == -1.8
 
@@ -160,7 +178,7 @@ class TestGame:
         assert len(game.achievements) > 0
         assert "初次胜利" in game.achievements
         assert "世界拯救者" in game.achievements
-        
+
         for achievement_name, achievement_data in game.achievements.items():
             assert "description" in achievement_data
             assert "completed" in achievement_data
@@ -173,10 +191,10 @@ class TestGame:
         player = Player()
         original_skill_points = player.skill_points
         original_level = player.level
-        
+
         # 模拟升级
         player.level_up()
-        
+
         assert player.level == original_level + 1
         assert player.skill_points == original_skill_points + 1
 
@@ -184,13 +202,15 @@ class TestGame:
         """测试元素伤害加成应用"""
         game = Game()
         game.player.element_damage_bonus = 1.5
-        
+
         # 模拟伤害计算
         base_damage = 100
         element_mult = 2.0
         crit = 1.0
-        
-        expected_damage = base_damage * element_mult * crit * game.player.element_damage_bonus
+
+        expected_damage = (
+            base_damage * element_mult * crit * game.player.element_damage_bonus
+        )
         assert expected_damage == 300.0
 
     def test_temporary_element_boost(self):
@@ -198,7 +218,7 @@ class TestGame:
         player = Player()
         player.temporary_element_boost = 2.0
         player.temporary_boost_turns = 3
-        
+
         # 模拟使用临时增强
         assert player.temporary_boost_turns == 3
         assert player.temporary_element_boost == 2.0
@@ -208,25 +228,28 @@ class TestGame:
         game = Game()
         achievement_name = "初次胜利"
         original_coin = game.player.coin
-        
+
         # 完成成就
         game.complete_achievement(achievement_name)
-        
+
         assert game.achievements[achievement_name]["completed"] == True
-        assert game.player.coin == original_coin + game.achievements[achievement_name]["reward"]
+        assert (
+            game.player.coin
+            == original_coin + game.achievements[achievement_name]["reward"]
+        )
 
     def test_shop_unlock_conditions(self):
         """测试商店解锁条件"""
         game = Game()
-        
+
         # 等级1时应该只能购买基础物品
         game.player.level = 1
         # 这里可以添加商店选项检查逻辑
-        
+
         # 等级3时应该解锁新装备
         game.player.level = 3
         # 这里可以添加商店选项检查逻辑
-        
+
         # 等级5时应该解锁元素卷轴
         game.player.level = 5
         # 这里可以添加商店选项检查逻辑
@@ -234,15 +257,15 @@ class TestGame:
     def test_skill_cooldown_update(self):
         """测试技能冷却更新"""
         game = Game()
-        
+
         # 设置技能冷却
         game.player.skills["火球术"]["cooldown"] = 3
-        
+
         # 更新冷却
         game.update_skill_cooldowns()
-        
+
         assert game.player.skills["火球术"]["cooldown"] == 2
-        
+
         # 继续更新直到冷却结束
         game.update_skill_cooldowns()
         game.update_skill_cooldowns()

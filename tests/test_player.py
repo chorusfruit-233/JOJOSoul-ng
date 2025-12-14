@@ -110,11 +110,11 @@ class TestPlayer:
         """测试升级获得技能点"""
         player = Player()
         original_points = player.skill_points
-        
+
         # 升级一次
         player.level_up()
         assert player.skill_points == original_points + 1
-        
+
         # 再次升级
         player.exp = player.exp_to_next
         player.level_up()
@@ -123,10 +123,10 @@ class TestPlayer:
     def test_skills_structure(self):
         """测试技能结构"""
         player = Player()
-        
+
         expected_skills = ["火球术", "治疗术", "护盾", "元素爆发", "时间减缓"]
         assert list(player.skills.keys()) == expected_skills
-        
+
         for skill_name, skill_data in player.skills.items():
             assert "level" in skill_data
             assert "cooldown" in skill_data
@@ -138,10 +138,10 @@ class TestPlayer:
     def test_element_damage_bonus(self):
         """测试元素伤害加成"""
         player = Player()
-        
+
         # 默认加成应该是1.0
         assert player.element_damage_bonus == 1.0
-        
+
         # 增加加成
         player.element_damage_bonus = 1.5
         assert player.element_damage_bonus == 1.5
@@ -149,11 +149,11 @@ class TestPlayer:
     def test_temporary_element_boost(self):
         """测试临时元素增强"""
         player = Player()
-        
+
         # 默认应该是1.0，0回合
         assert player.temporary_element_boost == 1.0
         assert player.temporary_boost_turns == 0
-        
+
         # 设置临时增强
         player.temporary_element_boost = 2.0
         player.temporary_boost_turns = 3
@@ -163,15 +163,15 @@ class TestPlayer:
     def test_shield_and_time_slow_status(self):
         """测试护盾和时间减缓状态"""
         player = Player()
-        
+
         # 默认状态应该是False
         assert player.shield_active == False
         assert player.time_slow_active == False
-        
+
         # 激活护盾
         player.shield_active = True
         assert player.shield_active == True
-        
+
         # 激活时间减缓
         player.time_slow_active = True
         assert player.time_slow_active == True

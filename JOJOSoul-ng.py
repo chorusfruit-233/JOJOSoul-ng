@@ -95,21 +95,73 @@ class Game:
         self.elements = ["火焰", "水", "土地", "暗黑魔法", "闪光"]
         # 成就系统
         self.achievements = {
-            "初次胜利": {"description": "击败第一个敌人", "completed": False, "reward": 50},
-            "小有成就": {"description": "击败10个敌人", "completed": False, "reward": 200},
-            "怪物猎人": {"description": "击败50个敌人", "completed": False, "reward": 1000},
-            "富有之人": {"description": "拥有1000金币", "completed": False, "reward": 100},
-            "大富翁": {"description": "拥有10000金币", "completed": False, "reward": 500},
+            "初次胜利": {
+                "description": "击败第一个敌人",
+                "completed": False,
+                "reward": 50,
+            },
+            "小有成就": {
+                "description": "击败10个敌人",
+                "completed": False,
+                "reward": 200,
+            },
+            "怪物猎人": {
+                "description": "击败50个敌人",
+                "completed": False,
+                "reward": 1000,
+            },
+            "富有之人": {
+                "description": "拥有1000金币",
+                "completed": False,
+                "reward": 100,
+            },
+            "大富翁": {
+                "description": "拥有10000金币",
+                "completed": False,
+                "reward": 500,
+            },
             "等级大师": {"description": "达到10级", "completed": False, "reward": 300},
             "传奇勇者": {"description": "达到20级", "completed": False, "reward": 1000},
-            "元素大师": {"description": "购买魔法袍", "completed": False, "reward": 150},
-            "技能新手": {"description": "学习第一个技能", "completed": False, "reward": 100},
-            "技能大师": {"description": "所有技能达到3级", "completed": False, "reward": 800},
-            "雪山征服者": {"description": "击败冰霜巨人", "completed": False, "reward": 300},
-            "暗影克星": {"description": "击败暗影刺客", "completed": False, "reward": 350},
-            "风暴掌控者": {"description": "击败雷电元素", "completed": False, "reward": 400},
-            "神殿英雄": {"description": "击败古代神殿所有敌人", "completed": False, "reward": 800},
-            "世界拯救者": {"description": "击败普奇神父", "completed": False, "reward": 2000},
+            "元素大师": {
+                "description": "购买魔法袍",
+                "completed": False,
+                "reward": 150,
+            },
+            "技能新手": {
+                "description": "学习第一个技能",
+                "completed": False,
+                "reward": 100,
+            },
+            "技能大师": {
+                "description": "所有技能达到3级",
+                "completed": False,
+                "reward": 800,
+            },
+            "雪山征服者": {
+                "description": "击败冰霜巨人",
+                "completed": False,
+                "reward": 300,
+            },
+            "暗影克星": {
+                "description": "击败暗影刺客",
+                "completed": False,
+                "reward": 350,
+            },
+            "风暴掌控者": {
+                "description": "击败雷电元素",
+                "completed": False,
+                "reward": 400,
+            },
+            "神殿英雄": {
+                "description": "击败古代神殿所有敌人",
+                "completed": False,
+                "reward": 800,
+            },
+            "世界拯救者": {
+                "description": "击败普奇神父",
+                "completed": False,
+                "reward": 2000,
+            },
         }
 
     def set_difficulty(self):
@@ -218,28 +270,42 @@ class Game:
 
                 print(f"获得金币: {reward_coin}")
                 print(f"获得经验: {exp_gain}")
-                
+
                 # 检查特定敌人成就
-                if name == "冰霜巨人" and not self.achievements["雪山征服者"]["completed"]:
+                if (
+                    name == "冰霜巨人"
+                    and not self.achievements["雪山征服者"]["completed"]
+                ):
                     self.complete_achievement("雪山征服者")
                     print("🏆 成就解锁：雪山征服者！")
-                elif name == "暗影刺客" and not self.achievements["暗影克星"]["completed"]:
+                elif (
+                    name == "暗影刺客"
+                    and not self.achievements["暗影克星"]["completed"]
+                ):
                     self.complete_achievement("暗影克星")
                     print("🏆 成就解锁：暗影克星！")
-                elif name == "雷电元素" and not self.achievements["风暴掌控者"]["completed"]:
+                elif (
+                    name == "雷电元素"
+                    and not self.achievements["风暴掌控者"]["completed"]
+                ):
                     self.complete_achievement("风暴掌控者")
                     print("🏆 成就解锁：风暴掌控者！")
                 elif name in ["石像守卫", "古代法师", "神殿骑士"]:
                     # 检查是否击败了所有神殿敌人
-                    temple_enemies_defeated = getattr(self, 'temple_enemies_defeated', [])
+                    temple_enemies_defeated = getattr(
+                        self, "temple_enemies_defeated", []
+                    )
                     if name not in temple_enemies_defeated:
                         temple_enemies_defeated.append(name)
                         self.temple_enemies_defeated = temple_enemies_defeated
-                    
-                    if len(self.temple_enemies_defeated) >= 3 and not self.achievements["神殿英雄"]["completed"]:
+
+                    if (
+                        len(self.temple_enemies_defeated) >= 3
+                        and not self.achievements["神殿英雄"]["completed"]
+                    ):
                         self.complete_achievement("神殿英雄")
                         print("🏆 成就解锁：神殿英雄！")
-                
+
                 # 检查一般成就
                 self.check_achievements()
                 break
@@ -343,20 +409,22 @@ class Game:
                 "药水 [50G, 回满HP]",
                 "宝箱 [70G, 随机抽奖]",
             ]
-            
+
             # 等级3解锁新装备
             if self.player.level >= 3:
-                choices.extend([
-                    "魔法袍 [200G, +15%元素伤害]",
-                    "力量护符 [150G, +3伤害下限倍率]",
-                    "守护盾 [180G, +50HP上限]",
-                    "经验药水 [80G, +100经验值]",
-                ])
-            
+                choices.extend(
+                    [
+                        "魔法袍 [200G, +15%元素伤害]",
+                        "力量护符 [150G, +3伤害下限倍率]",
+                        "守护盾 [180G, +50HP上限]",
+                        "经验药水 [80G, +100经验值]",
+                    ]
+                )
+
             # 等级5解锁高级道具
             if self.player.level >= 5:
                 choices.append("元素卷轴 [120G, 临时增强元素伤害]")
-            
+
             choices.append("离开商店")
             x = easygui.choicebox(msg, "商店", choices)
 
@@ -430,7 +498,7 @@ class Game:
     def use_element_scroll(self):
         """使用元素卷轴，临时增强元素伤害"""
         self.player.coin -= 120
-        
+
         element_choice = easygui.choicebox(
             "选择要增强的元素", "元素卷轴", self.elements
         )
@@ -439,8 +507,7 @@ class Game:
             self.player.temporary_boost_turns = 3  # 持续3回合
             print(f"元素卷轴使用成功：{element_choice}伤害临时提升100%，持续3回合！")
             easygui.msgbox(
-                f"{element_choice}伤害临时提升100%，持续3回合！",
-                "元素卷轴效果"
+                f"{element_choice}伤害临时提升100%，持续3回合！", "元素卷轴效果"
             )
 
     def skill_menu(self):
@@ -449,15 +516,21 @@ class Game:
             msg = f"技能点: {self.player.skill_points}\n\n"
             skill_list = []
             for skill_name, skill_data in self.player.skills.items():
-                cooldown_status = "就绪" if skill_data["cooldown"] == 0 else f"冷却中({skill_data['cooldown']}回合)"
-                skill_list.append(f"{skill_name} Lv.{skill_data['level']} [{cooldown_status}]")
-            
+                cooldown_status = (
+                    "就绪"
+                    if skill_data["cooldown"] == 0
+                    else f"冷却中({skill_data['cooldown']}回合)"
+                )
+                skill_list.append(
+                    f"{skill_name} Lv.{skill_data['level']} [{cooldown_status}]"
+                )
+
             skill_list.append("返回")
-            
+
             choice = easygui.choicebox(msg, "技能系统", skill_list)
             if not choice or choice == "返回":
                 break
-            
+
             # 提取技能名称
             skill_name = choice.split(" Lv.")[0]
             if skill_name in self.player.skills:
@@ -466,39 +539,39 @@ class Game:
     def manage_skill(self, skill_name):
         """管理单个技能"""
         skill = self.player.skills[skill_name]
-        
+
         # 技能描述
         descriptions = {
             "火球术": "造成50点火焰伤害，无视元素倍率",
             "治疗术": "恢复50%最大生命值",
             "护盾": "下回合受到伤害减半",
             "元素爆发": "所有元素伤害倍率x2，持续3回合",
-            "时间减缓": "敌人下回合无法攻击"
+            "时间减缓": "敌人下回合无法攻击",
         }
-        
+
         msg = f"{skill_name} (等级: {skill['level']})\n\n"
         msg += f"描述: {descriptions.get(skill_name, '未知技能')}\n"
         msg += f"冷却时间: {skill['max_cooldown']}回合\n"
         msg += f"当前冷却: {skill['cooldown']}回合\n\n"
-        
+
         if skill["level"] == 0:
             msg += f"学习此技能需要1个技能点"
             choices = ["学习技能", "返回"]
         else:
             msg += f"升级技能需要1个技能点"
             choices = ["升级技能", "使用技能", "返回"]
-        
+
         action = easygui.choicebox(msg, f"{skill_name}管理", choices)
         if not action or action == "返回":
             return
-        
+
         if action == "学习技能" or action == "升级技能":
             if self.player.skill_points >= 1:
                 self.player.skill_points -= 1
                 skill["level"] += 1
                 print(f"{skill_name}升级到Lv.{skill['level']}！")
                 easygui.msgbox(f"{skill_name}升级到Lv.{skill['level']}！", "升级成功")
-                
+
                 # 检查技能新手成就
                 if not self.achievements["技能新手"]["completed"]:
                     self.complete_achievement("技能新手")
@@ -514,7 +587,7 @@ class Game:
     def use_skill(self, skill_name):
         """使用技能"""
         skill = self.player.skills[skill_name]
-        
+
         if skill_name == "火球术":
             damage = 50 * skill["level"]
             print(f"火球术造成{damage}点火焰伤害！")
@@ -536,7 +609,7 @@ class Game:
             print("时间减缓！敌人下回合无法攻击！")
             self.player.time_slow_active = True
             return 0
-        
+
         # 设置冷却
         skill["cooldown"] = skill["max_cooldown"]
         return 0
@@ -550,46 +623,60 @@ class Game:
     def check_achievements(self):
         """检查并触发成就"""
         newly_completed = []
-        
+
         # 检查各类成就条件
-        if self.player.monsters_defeated >= 1 and not self.achievements["初次胜利"]["completed"]:
+        if (
+            self.player.monsters_defeated >= 1
+            and not self.achievements["初次胜利"]["completed"]
+        ):
             self.complete_achievement("初次胜利")
             newly_completed.append("初次胜利")
-        
-        if self.player.monsters_defeated >= 10 and not self.achievements["小有成就"]["completed"]:
+
+        if (
+            self.player.monsters_defeated >= 10
+            and not self.achievements["小有成就"]["completed"]
+        ):
             self.complete_achievement("小有成就")
             newly_completed.append("小有成就")
-        
-        if self.player.monsters_defeated >= 50 and not self.achievements["怪物猎人"]["completed"]:
+
+        if (
+            self.player.monsters_defeated >= 50
+            and not self.achievements["怪物猎人"]["completed"]
+        ):
             self.complete_achievement("怪物猎人")
             newly_completed.append("怪物猎人")
-        
+
         if self.player.coin >= 1000 and not self.achievements["富有之人"]["completed"]:
             self.complete_achievement("富有之人")
             newly_completed.append("富有之人")
-        
+
         if self.player.coin >= 10000 and not self.achievements["大富翁"]["completed"]:
             self.complete_achievement("大富翁")
             newly_completed.append("大富翁")
-        
+
         if self.player.level >= 10 and not self.achievements["等级大师"]["completed"]:
             self.complete_achievement("等级大师")
             newly_completed.append("等级大师")
-        
+
         if self.player.level >= 20 and not self.achievements["传奇勇者"]["completed"]:
             self.complete_achievement("传奇勇者")
             newly_completed.append("传奇勇者")
-        
+
         # 检查技能相关成就
-        skills_learned = sum(1 for skill in self.player.skills.values() if skill["level"] > 0)
+        skills_learned = sum(
+            1 for skill in self.player.skills.values() if skill["level"] > 0
+        )
         if skills_learned >= 1 and not self.achievements["技能新手"]["completed"]:
             self.complete_achievement("技能新手")
             newly_completed.append("技能新手")
-        
-        if all(skill["level"] >= 3 for skill in self.player.skills.values()) and not self.achievements["技能大师"]["completed"]:
+
+        if (
+            all(skill["level"] >= 3 for skill in self.player.skills.values())
+            and not self.achievements["技能大师"]["completed"]
+        ):
             self.complete_achievement("技能大师")
             newly_completed.append("技能大师")
-        
+
         # 显示新完成的成就
         if newly_completed:
             achievement_names = "、".join(newly_completed)
@@ -603,19 +690,23 @@ class Game:
             if not achievement["completed"]:
                 achievement["completed"] = True
                 self.player.coin += achievement["reward"]
-                print(f"成就完成：{achievement_name}，奖励{achievement['reward']}金币！")
+                print(
+                    f"成就完成：{achievement_name}，奖励{achievement['reward']}金币！"
+                )
 
     def show_achievements(self):
         """显示成就列表"""
         msg = "成就列表\n\n"
         completed_count = 0
-        
+
         for name, data in self.achievements.items():
             status = "✅" if data["completed"] else "❌"
-            msg += f"{status} {name}: {data['description']} (奖励: {data['reward']}金币)\n"
+            msg += (
+                f"{status} {name}: {data['description']} (奖励: {data['reward']}金币)\n"
+            )
             if data["completed"]:
                 completed_count += 1
-        
+
         msg += f"\n完成进度: {completed_count}/{len(self.achievements)}"
         easygui.msgbox(msg, "成就系统")
 
@@ -671,12 +762,12 @@ class Game:
             "temporary_boost_turns": self.player.temporary_boost_turns,
             "skill_points": self.player.skill_points,
         }
-        
+
         # 保存技能数据
         for skill_name, skill_data in self.player.skills.items():
             save_data[f"skill_{skill_name}_level"] = skill_data["level"]
             save_data[f"skill_{skill_name}_cooldown"] = skill_data["cooldown"]
-        
+
         # 保存成就数据
         for achievement_name, achievement_data in self.achievements.items():
             save_data[f"achievement_{achievement_name}"] = achievement_data["completed"]
@@ -721,19 +812,31 @@ class Game:
             self.lmode = float(save_data.get("lmode", 1.0))
             self.amode = float(save_data.get("amode", 1.0))
             # 新增属性
-            self.player.element_damage_bonus = float(save_data.get("element_damage_bonus", 1.0))
-            self.player.temporary_element_boost = float(save_data.get("temporary_element_boost", 1.0))
-            self.player.temporary_boost_turns = int(save_data.get("temporary_boost_turns", 0))
+            self.player.element_damage_bonus = float(
+                save_data.get("element_damage_bonus", 1.0)
+            )
+            self.player.temporary_element_boost = float(
+                save_data.get("temporary_element_boost", 1.0)
+            )
+            self.player.temporary_boost_turns = int(
+                save_data.get("temporary_boost_turns", 0)
+            )
             self.player.skill_points = int(save_data.get("skill_points", 0))
-            
+
             # 加载技能数据
             for skill_name in self.player.skills.keys():
-                self.player.skills[skill_name]["level"] = int(save_data.get(f"skill_{skill_name}_level", 0))
-                self.player.skills[skill_name]["cooldown"] = int(save_data.get(f"skill_{skill_name}_cooldown", 0))
-            
+                self.player.skills[skill_name]["level"] = int(
+                    save_data.get(f"skill_{skill_name}_level", 0)
+                )
+                self.player.skills[skill_name]["cooldown"] = int(
+                    save_data.get(f"skill_{skill_name}_cooldown", 0)
+                )
+
             # 加载成就数据
             for achievement_name in self.achievements.keys():
-                self.achievements[achievement_name]["completed"] = save_data.get(f"achievement_{achievement_name}", "False") == "True"
+                self.achievements[achievement_name]["completed"] = (
+                    save_data.get(f"achievement_{achievement_name}", "False") == "True"
+                )
 
             return True
         except Exception as e:
@@ -880,7 +983,13 @@ class Game:
                     300,
                     25,
                     250,
-                    {"火焰": 3.0, "水": -1.5, "土地": 0.8, "暗黑魔法": 1.2, "闪光": 0.5},
+                    {
+                        "火焰": 3.0,
+                        "水": -1.5,
+                        "土地": 0.8,
+                        "暗黑魔法": 1.2,
+                        "闪光": 0.5,
+                    },
                 )
             elif action == "暗影遗迹":
                 # 需要击败沼泽怪解锁
@@ -893,7 +1002,13 @@ class Game:
                     180,
                     30,
                     300,
-                    {"火焰": 0.5, "水": 0.5, "土地": 0.5, "暗黑魔法": -2.0, "闪光": 3.0},
+                    {
+                        "火焰": 0.5,
+                        "水": 0.5,
+                        "土地": 0.5,
+                        "暗黑魔法": -2.0,
+                        "闪光": 3.0,
+                    },
                 )
             elif action == "风暴高地":
                 # 需要击败熔岩怪解锁
@@ -906,7 +1021,13 @@ class Game:
                     220,
                     28,
                     280,
-                    {"火焰": 1.0, "水": 2.0, "土地": 0.3, "暗黑魔法": 1.5, "闪光": -1.8},
+                    {
+                        "火焰": 1.0,
+                        "水": 2.0,
+                        "土地": 0.3,
+                        "暗黑魔法": 1.5,
+                        "闪光": -1.8,
+                    },
                 )
             elif action == "古代神殿":
                 # 需要等级8解锁
@@ -923,7 +1044,13 @@ class Game:
                         350,
                         35,
                         400,
-                        {"火焰": 0.5, "水": 0.5, "土地": -1.5, "暗黑魔法": 0.8, "闪光": 2.5},
+                        {
+                            "火焰": 0.5,
+                            "水": 0.5,
+                            "土地": -1.5,
+                            "暗黑魔法": 0.8,
+                            "闪光": 2.5,
+                        },
                     )
                 elif enemy_choice == "古代法师":
                     self.battle(
@@ -931,7 +1058,13 @@ class Game:
                         280,
                         40,
                         450,
-                        {"火焰": 2.0, "水": -2.0, "土地": 1.5, "暗黑魔法": 3.0, "闪光": 0.1},
+                        {
+                            "火焰": 2.0,
+                            "水": -2.0,
+                            "土地": 1.5,
+                            "暗黑魔法": 3.0,
+                            "闪光": 0.1,
+                        },
                     )
                 elif enemy_choice == "神殿骑士":
                     self.battle(
@@ -939,7 +1072,13 @@ class Game:
                         400,
                         30,
                         500,
-                        {"火焰": 1.5, "水": 1.0, "土地": 2.0, "暗黑魔法": -1.0, "闪光": 1.8},
+                        {
+                            "火焰": 1.5,
+                            "水": 1.0,
+                            "土地": 2.0,
+                            "暗黑魔法": -1.0,
+                            "闪光": 1.8,
+                        },
                     )
             elif action == "天国":
                 self.boss_battle()
