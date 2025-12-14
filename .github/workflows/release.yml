@@ -18,6 +18,8 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_id: ${{ steps.create_release.outputs.id }}
     steps:
+    - uses: actions/checkout@v4
+    
     - name: Generate Release Content
       id: generate_content
       run: |
