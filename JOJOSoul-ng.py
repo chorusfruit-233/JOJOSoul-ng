@@ -435,7 +435,7 @@ class Game:
             "这个大陆被普奇神父所控制",
             "他想重启世界",
             "你是阻止他的最后希望",
-            "先打怪升级吧，{self.player.name}！",
+            f"先打怪升级吧，{self.player.name}！",
         ]
         for line in story:
             print(line)
