@@ -95,15 +95,6 @@ jobs:
       run: |
         mkdir -p release
         cp dist/${{ matrix.binary_name }} release/
-        cp README.md release/
-        cp -r .github release/
-        tar -czf JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
-
-    - name: Package for Linux
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        mkdir -p release
-        cp dist/${{ matrix.binary_name }} release/
         tar -czf JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
 
     - name: Package for macOS
