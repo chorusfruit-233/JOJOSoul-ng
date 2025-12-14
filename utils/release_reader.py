@@ -2,10 +2,9 @@
 Release reader module for reading and parsing RELEASE.md content
 """
 
-import os
 import re
 import logging
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 from pathlib import Path
 
 # Configure logging
@@ -141,7 +140,10 @@ class ReleaseReader:
         version_data = self.versions[version]
 
         # Return the version header and content from RELEASE.md
-        return f"### v{version} - {version_data['title']} ({version_data['date']})\n\n{version_data['content']}"
+        return (
+            f"### v{version} - {version_data['title']} "
+            f"({version_data['date']})\n\n{version_data['content']}"
+        )
 
     def get_latest_version(self) -> Optional[str]:
         """

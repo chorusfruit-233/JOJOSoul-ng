@@ -290,9 +290,7 @@ class Game:
                 f"我方血量：{self.player.life:.1f}"
             )
             if self.display.use_gui():
-                self.display.show_battle_info(
-                    "战斗状态", battle_info
-                )
+                self.display.show_battle_info("战斗状态", battle_info)
             else:
                 print(f"敌方({name})血量：{enemy_hp:.1f}")
                 print(f"我方血量：{self.player.life:.1f}")
