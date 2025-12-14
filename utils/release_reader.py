@@ -101,17 +101,12 @@ class ReleaseReader:
         lines = version_content.split('\n')
         filtered_lines = []
         
-        skip_next = False
+        # Find where version content ends (before next major section)
         for line in lines:
             if line.startswith('### v'):
                 continue  # Skip version header
-            if skip_next:
-                skip_next = False
-                continue
-            if line.startswith('#### 🎉 新增功能'):
-                skip_next = True  # Skip the next line (header)
-                continue
-                
+            if line.startswith('## 版本管理'):
+                break  # Stop at version management section
             if line.strip():
                 filtered_lines.append(line)
         
