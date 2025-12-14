@@ -382,9 +382,7 @@ class Game:
             self.player.level = int(save_data.get("level", 1))
             self.player.exp = int(save_data.get("exp", 0))
             self.player.exp_to_next = int(save_data.get("exp_to_next", 100))
-            self.player.monsters_defeated = int(
-                save_data.get("monsters_defeated", 0)
-            )
+            self.player.monsters_defeated = int(save_data.get("monsters_defeated", 0))
             self.lmode = float(save_data.get("lmode", 1.0))
             self.amode = float(save_data.get("amode", 1.0))
 
