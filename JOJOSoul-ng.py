@@ -2,10 +2,15 @@ import easygui
 import time
 import sys
 import random
+import os
+
+# 游戏版本
+VERSION = "1.0.0"
 
 
 class Player:
-    def __init__(self):
+    def __init__(self, name="勇者"):
+        self.name = name
         self.life = 100.0
         self.max_life = 100.0
         self.attack = 10.0
@@ -13,6 +18,10 @@ class Player:
         self.crit_max = 2  # aup
         self.crit_min = 0  # adown
         self.oxygen = 0  # O2
+        self.level = 1
+        self.exp = 0
+        self.exp_to_next = 100
+        self.monsters_defeated = 0
 
     def is_alive(self):
         return self.life > 0
@@ -22,15 +31,39 @@ class Player:
 
     def show_stats(self):
         info = (
+            f"角色: {self.name}\n"
+            f"等级: {self.level} (经验: {self.exp}/{self.exp_to_next})\n"
             f"生命值: {self.life:.1f}/{self.max_life:.1f}\n"
             f"伤害: {self.attack:.1f}\n"
             f"金币: {self.coin}\n"
             f"伤害倍率: {self.crit_min}x - {self.crit_max}x\n"
-            f"纯氧数量: {self.oxygen}"
+            f"纯氧数量: {self.oxygen}\n"
+            f"击败怪物: {self.monsters_defeated}"
         )
         print(info)
         # 同时也弹窗显示，体验更好
-        easygui.msgbox(info, "角色资料")
+        easygui.msgbox(info, f"{self.name}的资料")
+
+    def gain_exp(self, amount):
+        """获得经验值并升级"""
+        self.exp += amount
+        while self.exp >= self.exp_to_next:
+            self.level_up()
+
+    def level_up(self):
+        """升级"""
+        self.level += 1
+        self.exp -= self.exp_to_next
+        self.exp_to_next = int(self.exp_to_next * 1.5)
+
+        # 升级奖励
+        self.max_life += 10
+        self.life = self.max_life  # 升级回满血
+        self.attack += 2
+
+        print(f"🎉 恭喜升级到 {self.level} 级！")
+        print(f"生命上限 +10，攻击力 +2")
+        time.sleep(1)
 
 
 class Game:
@@ -128,7 +161,14 @@ class Game:
             if enemy_hp <= 0:
                 print("你赢了！！！")
                 self.player.coin += reward_coin
+                self.player.monsters_defeated += 1
+
+                # 计算经验值
+                exp_gain = int(base_hp * 0.1 + base_atk * 2)
+                self.player.gain_exp(exp_gain)
+
                 print(f"获得金币: {reward_coin}")
+                print(f"获得经验: {exp_gain}")
                 break
 
     def boss_battle(self):
@@ -288,22 +328,113 @@ class Game:
 
         time.sleep(1)
 
+    def save_game(self):
+        """保存游戏"""
+        save_data = {
+            "name": self.player.name,
+            "life": self.player.life,
+            "max_life": self.player.max_life,
+            "attack": self.player.attack,
+            "coin": self.player.coin,
+            "crit_max": self.player.crit_max,
+            "crit_min": self.player.crit_min,
+            "oxygen": self.player.oxygen,
+            "level": self.player.level,
+            "exp": self.player.exp,
+            "exp_to_next": self.player.exp_to_next,
+            "monsters_defeated": self.player.monsters_defeated,
+            "lmode": self.lmode,
+            "amode": self.amode,
+        }
+
+        try:
+            with open("savegame.dat", "w") as f:
+                for key, value in save_data.items():
+                    f.write(f"{key}:{value}\n")
+            print("游戏已保存！")
+            easygui.msgbox("游戏已保存！", "保存成功")
+        except Exception as e:
+            print(f"保存失败: {e}")
+            easygui.msgbox(f"保存失败: {e}", "错误")
+
+    def load_game(self):
+        """加载游戏"""
+        try:
+            if not os.path.exists("savegame.dat"):
+                return False
+
+            save_data = {}
+            with open("savegame.dat", "r") as f:
+                for line in f:
+                    if ":" in line:
+                        key, value = line.strip().split(":", 1)
+                        save_data[key] = value
+
+            # 恢复玩家数据
+            self.player.name = save_data.get("name", "勇者")
+            self.player.life = float(save_data.get("life", 100))
+            self.player.max_life = float(save_data.get("max_life", 100))
+            self.player.attack = float(save_data.get("attack", 10))
+            self.player.coin = int(save_data.get("coin", 100))
+            self.player.crit_max = int(save_data.get("crit_max", 2))
+            self.player.crit_min = int(save_data.get("crit_min", 0))
+            self.player.oxygen = int(save_data.get("oxygen", 0))
+            self.player.level = int(save_data.get("level", 1))
+            self.player.exp = int(save_data.get("exp", 0))
+            self.player.exp_to_next = int(save_data.get("exp_to_next", 100))
+            self.player.monsters_defeated = int(save_data.get("monsters_defeated", 0))
+            self.lmode = float(save_data.get("lmode", 1.0))
+            self.amode = float(save_data.get("amode", 1.0))
+
+            return True
+        except Exception as e:
+            print(f"加载失败: {e}")
+            return False
+
     def run(self):
+
+        print(f"JOJO Soul v{VERSION}")
         print("作者：YricOTF (Refactored)")
         time.sleep(1)
 
-        if easygui.buttonbox("是否游玩", choices=("YES", "NO")) == "NO":
+        # 角色命名
+        player_name = easygui.enterbox("请输入你的名字：", "角色创建", default="勇者")
+        if player_name:
+            self.player.name = player_name
+
+        print(f"欢迎, {self.player.name}!")
+
+        # 检查是否有存档
+        if os.path.exists("savegame.dat"):
+            if (
+                easygui.buttonbox(
+                    "发现存档，是否加载？", "加载游戏", ["加载存档", "新游戏"]
+                )
+                == "加载存档"
+            ):
+                if self.load_game():
+                    print(f"欢迎回来, {self.player.name}！")
+                    easygui.msgbox(
+                        f"欢迎回来, {self.player.name}！\n等级: {self.player.level}",
+                        "加载成功",
+                    )
+                else:
+                    easygui.msgbox("加载失败，开始新游戏", "错误")
+            else:
+                os.remove("savegame.dat")  # 删除旧存档
+
+        if easygui.buttonbox("是否开始游戏？", choices=("YES", "NO")) == "NO":
             sys.exit()
 
         self.set_difficulty()
 
         # 剧情文本
         story = [
-            "你降落在这个大陆",
+            f"{self.player.name}，你降落在这个大陆",
             "这个大陆被普奇神父所控制",
             "他想重启世界",
-            "你要阻止他",
-            "先打怪升级吧",
+            "你是阻止他的最后希望",
+            "先打怪升级吧，{self.player.name}！",
         ]
         for line in story:
             print(line)
@@ -323,6 +454,7 @@ class Game:
                     "熔岩地下城",
                     "天国",
                     "角色资料",
+                    "保存游戏",
                     "退出游戏",
                 ],
             )
@@ -334,6 +466,8 @@ class Game:
                 self.shop()
             elif action == "角色资料":
                 self.player.show_stats()
+            elif action == "保存游戏":
+                self.save_game()
             elif action == "丛林":
                 # 树妖：火x2, 水x0.5...
                 self.battle(
