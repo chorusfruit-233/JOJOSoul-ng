@@ -1,8 +1,9 @@
-import easygui
 import time
 import sys
 import random
 import os
+
+from display_manager import DisplayManager
 
 # 游戏版本
 VERSION = "2.0.0"
@@ -63,9 +64,15 @@ class Player:
                 f"\n临时元素增强: {self.temporary_element_boost:.2f}x "
                 f"(剩余{self.temporary_boost_turns}回合)"
             )
-        print(info)
-        # 同时也弹窗显示，体验更好
-        easygui.msgbox(info, f"{self.name}的资料")
+        # 使用DisplayManager同时显示终端和GUI
+        from display_manager import get_display_manager
+        display = get_display_manager()
+        display.show_info(info)
+        if display.is_gui_enabled():
+            display.show_message("角色信息", info)
+        from display_manager import get_display_manager
+        display = get_display_manager()
+        display.show_message(f"{self.name}的资料", info)
 
     def gain_exp(self, amount):
         """获得经验值并升级"""
@@ -85,14 +92,26 @@ class Player:
         self.attack += 2
         self.skill_points += 1  # 每次升级获得1个技能点
 
-        print(f"🎉 恭喜升级到 {self.level} 级！")
+        # 升级信息
+        upgrade_msg = f"🎉 恭喜升级到 {self.level} 级！\n生命上限 +10，攻击力 +2，技能点 +1"
+        
+        # 由于Player类在创建时可能还没有display_manager，使用简单的print
         print("生命上限 +10，攻击力 +2，技能点 +1")
         time.sleep(1)
+        
+        # 尝试使用display_manager（如果可用）
+        try:
+            from display_manager import get_display_manager
+            display = get_display_manager()
+            display.show_message("升级", f"🎉 恭喜升级到 {self.level} 级！")
+        except:
+            pass
 
 
 class Game:
     def __init__(self):
         self.player = Player()
+        self.display = None  # 延迟初始化，在run方法中根据用户选择创建
         self.lmode = 1.0  # 血量倍率
         self.amode = 1.0  # 攻击倍率
         self.elements = ["火焰", "水", "土地", "暗黑魔法", "闪光"]
@@ -176,9 +195,8 @@ class Game:
         }
 
     def set_difficulty(self):
-        mode = easygui.choicebox(
+        mode = self.display.get_choice(
             "选择难度",
-            "难度选择",
             ["无限金币版", "简单", "普通", "坤难", "炼狱"],
         )
         if not mode:
@@ -213,7 +231,7 @@ class Game:
         通用的战斗函数
         multipliers: 字典，key为元素名，value为伤害倍率（正数扣血，负数回血）
         """
-        print(f"\n>>> 开始战斗: {name} <<<")
+        self.display.show_battle_info("战斗开始", f"开始战斗: {name}")
         time.sleep(1)
 
         enemy_hp = base_hp * self.lmode
@@ -224,9 +242,7 @@ class Game:
 
         while True:
             crit = self.get_attack_multiplier()
-            choice = easygui.choicebox(
-                f"对战 {name} - 选择攻击元素", "战斗中", self.elements
-            )
+            choice = self.display.get_choice(f"对战 {name} - 选择攻击元素", self.elements)
             if not choice:
                 continue  # 防止点了取消报错
 
@@ -254,28 +270,37 @@ class Game:
 
             if damage > 0:
                 enemy_hp -= damage
-                print(f"你使用[{choice}]造成了 {damage:.1f} 点伤害！")
+                self.display.show_battle_info("攻击", f"你使用[{choice}]造成了 {damage:.1f} 点伤害！")
             else:
                 enemy_hp -= damage  # 减去负数等于加血
-                print(
-                    f"你的攻击被吸收了！敌人恢复了 {abs(damage):.1f} 点血量！"
-                )
+                absorb_info = f"你的攻击被吸收了！敌人恢复了 {abs(damage):.1f} 点血量！"
+                if self.display.use_gui():
+                    self.display.show_battle_info("攻击被吸收", absorb_info)
+                else:
+                    print(absorb_info)
 
             # 敌人攻击
             self.player.life -= enemy_atk
 
             time.sleep(1)
-            print(f"敌方({name})血量：{enemy_hp:.1f}")
-            print(f"我方血量：{self.player.life:.1f}")
+            # 显示战斗血量信息
+            battle_info = f"敌方({name})血量：{enemy_hp:.1f}\n我方血量：{self.player.life:.1f}"
+            if self.display.use_gui():
+                self.display.show_battle_info("战斗状态", battle_info)
+            else:
+                print(f"敌方({name})血量：{enemy_hp:.1f}")
+                print(f"我方血量：{self.player.life:.1f}")
             time.sleep(0.5)
 
             if not self.player.is_alive():
-                print("你死了！！！")
-                easygui.msgbox("你被打败了...", "游戏结束")
+                if not self.display.use_gui():
+                    print("你死了！！！")
+                self.display.show_message("游戏结束", "你被打败了...")
                 sys.exit(0)
 
             if enemy_hp <= 0:
-                print("你赢了！！！")
+                if not self.display.use_gui():
+                    print("你赢了！！！")
                 self.player.coin += reward_coin
                 self.player.monsters_defeated += 1
 
@@ -283,8 +308,13 @@ class Game:
                 exp_gain = int(base_hp * 0.1 + base_atk * 2)
                 self.player.gain_exp(exp_gain)
 
-                print(f"获得金币: {reward_coin}")
-                print(f"获得经验: {exp_gain}")
+                # 显示奖励信息
+                reward_info = f"获得金币: {reward_coin}\n获得经验: {exp_gain}"
+                if self.display.use_gui():
+                    self.display.show_message("战斗胜利", reward_info)
+                else:
+                    print(f"获得金币: {reward_coin}")
+                    print(f"获得经验: {exp_gain}")
 
                 # 检查特定敌人成就
                 if (
@@ -292,19 +322,18 @@ class Game:
                     and not self.achievements["雪山征服者"]["completed"]
                 ):
                     self.complete_achievement("雪山征服者")
-                    print("🏆 成就解锁：雪山征服者！")
+                    from display_manager import get_display_manager
+                    display = get_display_manager()
+                    display.show_message("成就解锁", "🏆 成就解锁：雪山征服者！")
                 elif (
                     name == "暗影刺客"
                     and not self.achievements["暗影克星"]["completed"]
                 ):
+                    from display_manager import get_display_manager
+                    display = get_display_manager()
+                    display.show_message("成就解锁", "🏆 成就解锁：暗影克星！")
                     self.complete_achievement("暗影克星")
-                    print("🏆 成就解锁：暗影克星！")
-                elif (
-                    name == "雷电元素"
-                    and not self.achievements["风暴掌控者"]["completed"]
-                ):
-                    self.complete_achievement("风暴掌控者")
-                    print("🏆 成就解锁：风暴掌控者！")
+                    display.show_message("成就解锁", "🏆 成就解锁：风暴掌控者！")
                 elif name in ["石像守卫", "古代法师", "神殿骑士"]:
                     # 检查是否击败了所有神殿敌人
                     temple_enemies_defeated = getattr(
@@ -319,14 +348,16 @@ class Game:
                         and not self.achievements["神殿英雄"]["completed"]
                     ):
                         self.complete_achievement("神殿英雄")
-                        print("🏆 成就解锁：神殿英雄！")
+                        from display_manager import get_display_manager
+                        display = get_display_manager()
+                        display.show_message("成就解锁", "🏆 成就解锁：神殿英雄！")
 
                 # 检查一般成就
                 self.check_achievements()
                 break
 
     def boss_battle(self):
-        print("\n>>> 最终战斗: 普奇神父 <<<")
+        self.display.show_battle_info("最终战斗", "普奇神父")
         time.sleep(1)
         enemy_hp = 1000
         enemy_atk = 50
@@ -336,13 +367,9 @@ class Game:
 
         while True:
             crit = self.get_attack_multiplier()
-            if (
-                easygui.buttonbox(
-                    f"离[天国之时]还有 {turn_limit} [天国之刻]",
-                    "Heaven",
-                    ["阻止他"],
-                )
-                is None
+            if not self.display.get_yes_no(
+                "Heaven",
+                f"离[天国之时]还有 {turn_limit} [天国之刻]，是否阻止他？"
             ):
                 sys.exit()
 
@@ -354,7 +381,7 @@ class Game:
             block = random.randint(1, 2)
 
             options = self.elements + ["纯氧"]
-            choice = easygui.choicebox("选择攻击元素", "决战", options)
+            choice = self.display.get_choice("选择攻击元素", options)
             if not choice:
                 continue
 
@@ -381,14 +408,27 @@ class Game:
                 enemy_hp -= damage
             elif choice == "纯氧":
                 if self.player.oxygen < 5:
-                    print("你没有足够的纯氧！普奇还是逃了出来。")
+                    msg = "你没有足够的纯氧！普奇还是逃了出来。"
+                    if self.display.use_gui():
+                        self.display.show_message("纯氧不足", msg)
+                    else:
+                        print(msg)
                 else:
-                    print("神父吸入纯氧！")
-                    print("隐藏结局：我是安波里欧")
+                    msg1 = "神父吸入纯氧！"
+                    msg2 = "隐藏结局：我是安波里欧"
+                    if self.display.use_gui():
+                        self.display.show_message("隐藏结局", f"{msg1}\n{msg2}")
+                    else:
+                        print(msg1)
+                        print(msg2)
                     time.sleep(2)
                     sys.exit()
             elif block == 2 and choice != "闪光" and choice != "纯氧":
-                print("普奇速度过快，你没有打到！")
+                msg = "普奇速度过快，你没有打到！"
+                if self.display.use_gui():
+                    self.display.show_battle_info("攻击落空", msg)
+                else:
+                    print(msg)
 
             # 敌人反击
             # 原版逻辑：life = life - Eattck * block (如果普奇闪避了，伤害翻倍？block是1或2)
@@ -397,24 +437,37 @@ class Game:
             turn_limit -= 1
 
             if damage > 0:
-                print(f"你造成了 {damage:.1f} 点伤害！")
+                self.display.show_battle_info("攻击", f"你造成了 {damage:.1f} 点伤害！")
 
-            print(
-                f"敌方血量：{enemy_hp:.1f} | 我方血量：{self.player.life:.1f}"
-            )
+            # 显示Boss战血量信息
+            boss_battle_info = f"敌方血量：{enemy_hp:.1f} | 我方血量：{self.player.life:.1f}"
+            if self.display.use_gui():
+                self.display.show_battle_info("Boss战状态", boss_battle_info)
+            else:
+                print(boss_battle_info)
 
             if not self.player.is_alive():
-                print("你死了！！！")
+                if not self.display.use_gui():
+                    print("你死了！！！")
                 sys.exit()
             elif enemy_hp <= 0:
                 if self.player.coin > 1000000000:  # 粗略判断是否作弊版
-                    print("普奇：纪狗气死我了")
+                    if not self.display.use_gui():
+                        print("普奇：纪狗气死我了")
+                    victory_msg = "普奇：纪狗气死我了"
                 else:
-                    print("你赢了！！！，恭喜通关！")
+                    if not self.display.use_gui():
+                        print("你赢了！！！，恭喜通关！")
+                    victory_msg = "你赢了！！！，恭喜通关！"
                     # 检查世界拯救者成就
                     if not self.achievements["世界拯救者"]["completed"]:
                         self.complete_achievement("世界拯救者")
-                        print("🏆 成就解锁：世界拯救者！")
+                        self.display.show_message("成就解锁", "🏆 成就解锁：世界拯救者！")
+                
+                # 显示胜利信息
+                if self.display.use_gui():
+                    self.display.show_message("游戏通关", victory_msg)
+                
                 time.sleep(3)
                 sys.exit()
 
@@ -445,7 +498,7 @@ class Game:
                 choices.append("元素卷轴 [120G, 临时增强元素伤害]")
 
             choices.append("离开商店")
-            x = easygui.choicebox(msg, "商店", choices)
+            x = self.display.get_choice("商店", choices)
 
             if not x or x == "离开商店":
                 break
@@ -454,21 +507,21 @@ class Game:
                 if self.player.coin >= 100:
                     self.player.max_life += 30
                     self.player.coin -= 100
-                    print("购买成功：生命上限+30")
+                    self.display.show_message("购买成功", "生命上限+30")
                 else:
                     self.no_money()
             elif "剑" in x:
                 if self.player.coin >= 100:
                     self.player.attack += 5
                     self.player.coin -= 100
-                    print("购买成功：伤害+5")
+                    self.display.show_message("购买成功", "伤害+5")
                 else:
                     self.no_money()
-            elif "药水" in x:
+            elif x == "药水 [50G, 回满HP]":
                 if self.player.coin >= 50:
                     self.player.heal_full()
                     self.player.coin -= 50
-                    print("购买成功：生命已回满")
+                    self.display.show_message("购买成功", "生命已回满")
                 else:
                     self.no_money()
             elif "宝箱" in x:
@@ -477,32 +530,32 @@ class Game:
                 if self.player.coin >= 200:
                     self.player.element_damage_bonus += 0.15
                     self.player.coin -= 200
-                    print("购买成功：元素伤害+15%")
+                    self.display.show_message("购买成功", "元素伤害+15%")
                     # 检查元素大师成就
                     if not self.achievements["元素大师"]["completed"]:
                         self.complete_achievement("元素大师")
-                        print("🏆 成就解锁：元素大师！")
+                        self.display.show_message("成就解锁", "🏆 成就解锁：元素大师！")
                 else:
                     self.no_money()
             elif "力量护符" in x:
                 if self.player.coin >= 150:
                     self.player.crit_min += 3
                     self.player.coin -= 150
-                    print("购买成功：伤害下限倍率+3")
+                    self.display.show_message("购买成功", "伤害下限倍率+3")
                 else:
                     self.no_money()
             elif "守护盾" in x:
                 if self.player.coin >= 180:
                     self.player.max_life += 50
                     self.player.coin -= 180
-                    print("购买成功：生命上限+50")
+                    self.display.show_message("购买成功", "生命上限+50")
                 else:
                     self.no_money()
-            elif "经验药水" in x:
+            elif x == "经验药水 [80G, +100经验值]":
                 if self.player.coin >= 80:
                     self.player.gain_exp(100)
                     self.player.coin -= 80
-                    print("购买成功：获得100经验值")
+                    self.display.show_message("购买成功", "获得100经验值")
                 else:
                     self.no_money()
             elif "元素卷轴" in x:
@@ -512,24 +565,22 @@ class Game:
                     self.no_money()
 
     def no_money(self):
-        easygui.msgbox("金币不足！", "错误")
+        self.display.show_message("错误", "金币不足！")
 
     def use_element_scroll(self):
         """使用元素卷轴，临时增强元素伤害"""
         self.player.coin -= 120
 
-        element_choice = easygui.choicebox(
-            "选择要增强的元素", "元素卷轴", self.elements
-        )
+        element_choice = self.display.get_choice("元素卷轴", self.elements)
         if element_choice:
             self.player.temporary_element_boost = 2.0  # 2倍伤害
             self.player.temporary_boost_turns = 3  # 持续3回合
-            print(
+            self.display.show_info(
                 f"元素卷轴使用成功：{element_choice}伤害临时提升100%，持续3回合！"
             )
-            easygui.msgbox(
-                f"{element_choice}伤害临时提升100%，持续3回合！",
+            self.display.show_message(
                 "元素卷轴效果",
+                f"{element_choice}伤害临时提升100%，持续3回合！"
             )
 
     def skill_menu(self):
@@ -550,7 +601,7 @@ class Game:
 
             skill_list.append("返回")
 
-            choice = easygui.choicebox(msg, "技能系统", skill_list)
+            choice = self.display.get_choice("技能系统", skill_list)
             if not choice or choice == "返回":
                 break
 
@@ -584,7 +635,7 @@ class Game:
             msg += "升级技能需要1个技能点"
             choices = ["升级技能", "使用技能", "返回"]
 
-        action = easygui.choicebox(msg, f"{skill_name}管理", choices)
+        action = self.display.get_choice(f"{skill_name}管理", choices)
         if not action or action == "返回":
             return
 
@@ -592,20 +643,19 @@ class Game:
             if self.player.skill_points >= 1:
                 self.player.skill_points -= 1
                 skill["level"] += 1
-                print(f"{skill_name}升级到Lv.{skill['level']}！")
-                easygui.msgbox(
-                    f"{skill_name}升级到Lv.{skill['level']}！", "升级成功"
-                )
+                from display_manager import get_display_manager
+                display = get_display_manager()
+                display.show_message("技能升级", f"{skill_name}升级到Lv.{skill['level']}！")
 
                 # 检查技能新手成就
                 if not self.achievements["技能新手"]["completed"]:
                     self.complete_achievement("技能新手")
-                    print("🏆 成就解锁：技能新手！")
+                    display.show_message("成就解锁", "🏆 成就解锁：技能新手！")
             else:
-                easygui.msgbox("技能点不足！", "错误")
+                display.show_message("错误", "技能点不足！")
         elif action == "使用技能":
             if skill["cooldown"] > 0:
-                easygui.msgbox("技能还在冷却中！", "错误")
+                self.display.show_message("错误", "技能还在冷却中！")
             else:
                 self.use_skill(skill_name)
 
@@ -615,25 +665,25 @@ class Game:
 
         if skill_name == "火球术":
             damage = 50 * skill["level"]
-            print(f"火球术造成{damage}点火焰伤害！")
+            self.display.show_battle_info("火球术", f"造成{damage}点火焰伤害！")
             return damage
         elif skill_name == "治疗术":
             heal_amount = self.player.max_life * 0.5 * skill["level"]
             self.player.life = min(
                 self.player.life + heal_amount, self.player.max_life
             )
-            print(f"治疗术恢复了{heal_amount:.1f}点生命值！")
+            self.display.show_battle_info("治疗", f"治疗术恢复了{heal_amount:.1f}点生命值！")
             return 0
         elif skill_name == "护盾":
-            print("护盾激活！下回合受到伤害减半！")
+            self.display.show_battle_info("护盾", "护盾激活！下回合受到伤害减半！")
             self.player.shield_active = True
             return 0
         elif skill_name == "元素爆发":
             self.player.element_damage_bonus *= 2.0
-            print("元素爆发！所有元素伤害倍率x2，持续3回合！")
+            self.display.show_battle_info("元素爆发", "所有元素伤害倍率x2，持续3回合！")
             return 0
         elif skill_name == "时间减缓":
-            print("时间减缓！敌人下回合无法攻击！")
+            self.display.show_battle_info("时间减缓", "敌人下回合无法攻击！")
             self.player.time_slow_active = True
             return 0
 
@@ -722,8 +772,10 @@ class Game:
         # 显示新完成的成就
         if newly_completed:
             achievement_names = "、".join(newly_completed)
-            print(f"🏆 成就解锁：{achievement_names}！")
-            easygui.msgbox(f"🏆 成就解锁：\n{achievement_names}", "成就系统")
+            from display_manager import get_display_manager
+            display = get_display_manager()
+            display.show_info(f"🏆 成就解锁：{achievement_names}！")
+            display.show_message("成就系统", f"🏆 成就解锁：\n{achievement_names}")
 
     def complete_achievement(self, achievement_name):
         """完成成就并发放奖励"""
@@ -752,7 +804,7 @@ class Game:
                 completed_count += 1
 
         msg += f"\n完成进度: {completed_count}/{len(self.achievements)}"
-        easygui.msgbox(msg, "成就系统")
+        self.display.show_message("成就系统", msg)
 
     def open_chest(self):
         if self.player.coin < 70:
@@ -765,22 +817,33 @@ class Game:
         if outcome == 1:
             val = random.randint(-20, 30)
             self.player.max_life += val
-            print(f"抽奖结果：生命上限变化 {val}")
+            from display_manager import get_display_manager
+            display = get_display_manager()
+            display.show_info(f"抽奖结果：生命上限变化 {val}")
+            display.show_message("宝箱抽奖", f"抽奖结果：生命上限变化 {val}")
         elif outcome == 2:
             val = random.randint(-5, 10)
             self.player.attack += val
-            print(f"抽奖结果：伤害变化 {val}")
+            from display_manager import get_display_manager
+            display = get_display_manager()
+            display.show_info(f"抽奖结果：伤害变化 {val}")
         elif outcome == 3:
             val = random.randint(-1, 1)
             self.player.crit_max += val
-            print(f"抽奖结果：伤害上限倍率变化 {val}")
+            from display_manager import get_display_manager
+            display = get_display_manager()
+            display.show_info(f"抽奖结果：伤害上限倍率变化 {val}")
         elif outcome == 4:
             val = random.randint(0, 1)
             self.player.crit_min += val
-            print(f"抽奖结果：伤害下限倍率变化 {val}")
+            from display_manager import get_display_manager
+            display = get_display_manager()
+            display.show_info(f"抽奖结果：伤害下限倍率变化 {val}")
         elif outcome == 5:
             self.player.oxygen += 1
-            print("获得了氧气 x1")
+            from display_manager import get_display_manager
+            display = get_display_manager()
+            display.show_info("获得了氧气 x1")
 
         time.sleep(1)
 
@@ -823,10 +886,10 @@ class Game:
                 for key, value in save_data.items():
                     f.write(f"{key}:{value}\n")
             print("游戏已保存！")
-            easygui.msgbox("游戏已保存！", "保存成功")
+            self.display.show_message("保存成功", "游戏已保存！")
         except Exception as e:
             print(f"保存失败: {e}")
-            easygui.msgbox(f"保存失败: {e}", "错误")
+            self.display.show_message("错误", f"保存失败: {e}")
 
     def load_game(self):
         """加载游戏"""
@@ -891,40 +954,91 @@ class Game:
             return False
 
     def run(self):
+        # 显示模式选择（仅在启动时显示一次）
+        if not hasattr(self, '_mode_selected'):
+            # 让用户选择显示模式
+            mode_choices = [
+                "GUI模式 (图形界面)",
+                "终端模式 (命令行界面)", 
+                "混合模式 (优先GUI，失败时使用终端)"
+            ]
+            
+            print("=== JOJO Soul - 显示模式选择 ===")
+            print("请选择您偏好的显示模式：")
+            for i, choice in enumerate(mode_choices):
+                print(f"{i+1}. {choice}")
+            
+            selected_mode = 'both'  # 默认值
+            while True:
+                try:
+                    selection = input("请输入选择 (1-3，默认为3): ").strip()
+                    if not selection:
+                        selection = "3"
+                    
+                    if selection == "1":
+                        selected_mode = 'gui'
+                        print("已选择：GUI模式")
+                        break
+                    elif selection == "2":
+                        selected_mode = 'terminal'
+                        print("已选择：终端模式")
+                        break
+                    elif selection == "3":
+                        selected_mode = 'both'
+                        print("已选择：混合模式")
+                        break
+                    else:
+                        print("无效选择，请输入1-3")
+                except KeyboardInterrupt:
+                    print("\n使用默认混合模式")
+                    selected_mode = 'both'
+                    break
+                except ValueError:
+                    print("请输入有效数字")
+            
+            # 现在根据用户选择创建DisplayManager
+            from display_manager import DisplayManager
+            self.display = DisplayManager(mode=selected_mode)
+            print(f"当前显示模式: {self.display.get_mode()}")
+            print("=== 开始游戏 ===\n")
+            
+            # 标记已选择模式，避免重复显示
+            self._mode_selected = True
+        else:
+            # 如果已经选择过模式，确保display已初始化
+            if self.display is None:
+                from display_manager import DisplayManager
+                self.display = DisplayManager(mode='both')
 
         print(f"JOJO Soul v{VERSION}")
         print("作者：YricOTF (Refactored)")
         time.sleep(1)
 
         # 角色命名
-        player_name = easygui.enterbox(
-            "请输入你的名字：", "角色创建", default="勇者"
+        player_name = self.display.get_input(
+            "角色创建", "请输入你的名字："
         )
         if player_name:
             self.player.name = player_name
+            self.display.show_message("欢迎", f"欢迎, {self.player.name}!")
+        else:
+            self.player.name = "勇者"
+            self.display.show_message("欢迎", f"欢迎, {self.player.name}!")
 
-        print(f"欢迎, {self.player.name}!")
+    
 
-        # 检查是否有存档
-        if os.path.exists("savegame.dat"):
-            if (
-                easygui.buttonbox(
-                    "发现存档，是否加载？", "加载游戏", ["加载存档", "新游戏"]
-                )
-                == "加载存档"
-            ):
-                if self.load_game():
-                    print(f"欢迎回来, {self.player.name}！")
-                    easygui.msgbox(
-                        f"欢迎回来, {self.player.name}！\n等级: {self.player.level}",
-                        "加载成功",
-                    )
+                        # 检查是否有存档
+            if os.path.exists("savegame.dat"):
+                if self.display.get_choice("加载游戏", ["加载存档", "新游戏"]) == "加载存档":
+                    if self.load_game():
+                        print(f"欢迎回来, {self.player.name}!")
+                        self.display.show_message("加载成功", f"欢迎回来, {self.player.name}!\n等级: {self.player.level}")
+                    else:
+                        self.display.show_message("错误", "加载失败，开始新游戏")
                 else:
-                    easygui.msgbox("加载失败，开始新游戏", "错误")
-            else:
-                os.remove("savegame.dat")  # 删除旧存档
+                    os.remove("savegame.dat")  # 删除旧存档
 
-        if easygui.buttonbox("是否开始游戏？", choices=("YES", "NO")) == "NO":
+        if not self.display.get_yes_no("开始游戏", "是否开始游戏？"):
             sys.exit()
 
         self.set_difficulty()
@@ -937,16 +1051,22 @@ class Game:
             "你是阻止他的最后希望",
             f"先打怪升级吧，{self.player.name}！",
         ]
-        for line in story:
-            print(line)
-            time.sleep(1)
+        
+        # 在GUI模式下，将剧情合并显示
+        if self.display.use_gui():
+            story_text = "\n".join(story)
+            self.display.show_message("剧情", story_text)
+        else:
+            # 终端模式逐行显示
+            for line in story:
+                print(line)
+                time.sleep(1)
 
         while True:
             self.check_stat_anomalies()
 
-            action = easygui.choicebox(
+            action = self.display.get_choice(
                 "选择行动",
-                "世界地图",
                 [
                     "商店",
                     "技能系统",
@@ -1042,7 +1162,7 @@ class Game:
             elif action == "雪山":
                 # 需要等级5解锁
                 if self.player.level < 5:
-                    easygui.msgbox("需要达到5级才能进入雪山！", "等级不足")
+                    self.display.show_message("等级不足", "需要达到5级才能进入雪山！")
                     continue
                 # 冰霜巨人
                 self.battle(
@@ -1103,12 +1223,11 @@ class Game:
             elif action == "古代神殿":
                 # 需要等级8解锁
                 if self.player.level < 8:
-                    easygui.msgbox("需要达到8级才能进入古代神殿！", "等级不足")
+                    self.display.show_message("等级不足", "需要达到8级才能进入古代神殿！")
                     continue
                 # 随机选择一个高级敌人
-                enemy_choice = easygui.choicebox(
+                enemy_choice = self.display.get_choice(
                     "选择挑战的敌人",
-                    "古代神殿",
                     ["石像守卫", "古代法师", "神殿骑士"],
                 )
                 if enemy_choice == "石像守卫":
