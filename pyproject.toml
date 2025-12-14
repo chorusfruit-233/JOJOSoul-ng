@@ -1,3 +1,22 @@
+[project]
+name = "JOJOSoul-ng"
+version = "1.0.2"
+description = "基于 Python 的 JOJO 奇妙冒险同人游戏"
+authors = [
+    {name = "YricOTF"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Role-Playing",
+]
+
 [tool.black]
 line-length = 88
 target-version = ['py312']
