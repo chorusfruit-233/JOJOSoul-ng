@@ -80,35 +80,32 @@ class ReleaseReader:
             self.versions[version] = {
                 'title': title,
                 'date': date,
-                'content': version_content,
-                'full_content': self._extract_version_details(version_content)
+                'content': self._extract_version_content(version_content)
             }
         
         logger.info(f"Parsed {len(self.versions)} versions")
         return self.versions
     
-    def _extract_version_details(self, version_content: str) -> str:
+    def _extract_version_content(self, version_content: str) -> str:
         """
-        Extract detailed content for a version
+        Extract raw content for a version from RELEASE.md
         
         Args:
             version_content: Raw version content
             
         Returns:
-            Formatted content string
+            Raw content string without version management section
         """
-        # Remove the version header line
+        # Find where version content ends (before next major section)
         lines = version_content.split('\n')
         filtered_lines = []
         
-        # Find where version content ends (before next major section)
         for line in lines:
             if line.startswith('### v'):
                 continue  # Skip version header
             if line.startswith('## 版本管理'):
                 break  # Stop at version management section
-            if line.strip():
-                filtered_lines.append(line)
+            filtered_lines.append(line)
         
         return '\n'.join(filtered_lines)
     
@@ -120,7 +117,7 @@ class ReleaseReader:
             version: Version string (e.g., "2.0.0")
             
         Returns:
-            Formatted content string or None if not found
+            Raw content string or None if not found
         """
         if not self.versions:
             self.parse_versions()
@@ -131,25 +128,8 @@ class ReleaseReader:
         
         version_data = self.versions[version]
         
-        # Format the content for GitHub Release
-        formatted_content = f"""## JOJO Soul v{version} - {version_data['title']}
-        
-{version_data['full_content']}
-
----
-### 📦 安装说明
-1. 下载对应平台的可执行文件
-2. 直接运行即可开始游戏
-
-### 🌟 系统要求
-- Windows 10/11
-- macOS 10.14+
-- Linux (支持图形界面)
-
-查看完整更新日志请访问 [项目主页](https://github.com/chorusfruit-233/JOJOSoul-ng)
-"""
-        
-        return formatted_content
+        # Return the version header and content from RELEASE.md
+        return f"### v{version} - {version_data['title']} ({version_data['date']})\n\n{version_data['content']}"
     
     def get_latest_version(self) -> Optional[str]:
         """
