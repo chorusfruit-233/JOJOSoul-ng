@@ -24,27 +24,7 @@ jobs:
       with:
         tag_name: ${{ github.ref_name || github.event.inputs.tag_name }}
         name: JOJO Soul ${{ github.ref_name || github.event.inputs.tag_name }}
-        body: |
-          ## JOJO Soul 游戏发布
-          
-          ### 新特性
-          - 基于 Python 的 JOJO 奇妙冒险同人游戏
-          - 完整的角色系统和战斗机制
-          - 五种元素属性战斗系统
-          - 商店系统和装备升级
-          - 多种难度选择
-          - 图形用户界面
-          
-          ### 安装说明
-          1. 下载对应平台的可执行文件
-          2. 直接运行即可开始游戏
-          
-          ### 系统要求
-          - Windows 10/11
-          - 支持图形界面的操作系统
-          
-          ### 更新日志
-          查看完整更新日志请访问 [项目主页](https://github.com/chorusfruit-233/JOJOSoul-ng)
+        body_path: RELEASE.md
         draft: false
         prerelease: false
         files: |
