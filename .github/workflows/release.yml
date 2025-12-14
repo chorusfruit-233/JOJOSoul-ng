@@ -18,77 +18,31 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_id: ${{ steps.create_release.outputs.id }}
     steps:
+    - name: Generate Release Content
+      id: generate_content
+      run: |
+        VERSION="${{ github.ref_name || github.event.inputs.tag_name }}"
+        echo "Generating release content for version: $VERSION"
+        
+        # Generate release content using our script
+        python scripts/generate_release.py --version "$VERSION" --output release_body.md
+        
+        # Verify the content was generated
+        if [ -f "release_body.md" ]; then
+          echo "Release content generated successfully"
+          echo "RELEASE_BODY_FILE=release_body.md" >> $GITHUB_OUTPUT
+        else
+          echo "Failed to generate release content, using fallback"
+          echo "RELEASE_BODY_FILE=" >> $GITHUB_OUTPUT
+        fi
+
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.ref_name || github.event.inputs.tag_name }}
         name: JOJO Soul ${{ github.ref_name || github.event.inputs.tag_name }}
-        body: |
-          ## JOJO Soul v${{ github.ref_name || github.event.inputs.tag_name }}
-          
-          ### 🎉 新增功能
-          
-          **🗺️ 新地图区域**
-          - 🏔️ **雪山**: 5级解锁，新增冰霜巨人敌人
-          - 🌑 **暗影遗迹**: 击败沼泽怪解锁，新增暗影刺客敌人
-          - ⛈️ **风暴高地**: 击败熔岩怪解锁，新增雷电元素敌人
-          - 🏛️ **古代神殿**: 8级解锁，3种高级敌人可选择挑战
-          
-          **👥 新敌人类型**
-          - ❄️ **冰霜巨人**: HP:300, ATK:25, 火焰3.0倍伤害
-          - 🥷 **暗影刺客**: HP:180, ATK:30, 闪光3.0倍伤害
-          - ⚡ **雷电元素**: HP:220, ATK:28, 水2.0倍伤害
-          - 🗿 **石像守卫**: HP:350, ATK:35, 古代神殿敌人
-          - 🧙 **古代法师**: HP:280, ATK:40, 古代神殿敌人
-          - ⚔️ **神殿骑士**: HP:400, ATK:30, 古代神殿敌人
-          
-          **🛒 扩展商店系统**
-          - 🧙 **魔法袍** [200G]: +15% 元素伤害加成
-          - 💪 **力量护符** [150G]: +3 伤害下限倍率
-          - 🛡️ **守护盾** [180G]: +50 生命上限
-          - ⭐ **经验药水** [80G]: 直接获得100经验值
-          - 📜 **元素卷轴** [120G]: 临时增强元素伤害2倍
-          
-          **🎯 技能系统**
-          - 升级获得技能点，每次升级+1技能点
-          - 5个主动技能：火球术、治疗术、护盾、元素爆发、时间减缓
-          - 每个技能都有独立的冷却时间
-          
-          **🏆 成就系统**
-          - 15个成就等你完成
-          - 战斗成就、收集成就、成长成就、特殊成就
-          - 完成成就获得金币奖励
-          
-          ### 🔧 技术改进
-          - 完全兼容旧存档
-          - 支持所有新功能的存档和读档
-          - 新增20+个测试用例
-          - 优化战斗计算逻辑
-          - 提升游戏整体性能
-          
-          ### 🎮 游戏平衡
-          - 新敌人难度经过精心调整
-          - 装备价格和效果平衡
-          - 技能冷却时间合理设置
-          - 成就奖励适度调整
-          
-          ### 🐛 修复问题
-          - 修复原版中的各种小问题
-          - 改进用户界面体验
-          - 优化错误处理机制
-          
-          ### 📦 安装说明
-          1. 下载对应平台的可执行文件
-          2. 直接运行即可开始游戏
-          
-          ### 🌟 系统要求
-          - Windows 10/11
-          - macOS 10.14+
-          - Linux (支持图形界面)
-          
-          ---
-          查看完整更新日志请访问 [项目主页](https://github.com/chorusfruit-233/JOJOSoul-ng)
+        body_path: ${{ steps.generate_content.outputs.RELEASE_BODY_FILE }}
         draft: false
         prerelease: false
         files: |
@@ -96,6 +50,7 @@ jobs:
           JOJOSoul-mac-*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true
 
   build-and-upload:
     needs: create-release
