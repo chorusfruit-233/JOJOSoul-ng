@@ -1,7 +1,9 @@
-import pytest
 import sys
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+# 检查是否在 CI 环境中
+IS_CI = os.environ.get("CI", "false").lower() == "true"
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,7 +14,8 @@ import importlib.util
 spec = importlib.util.spec_from_file_location(
     "JOJOSoul",
     os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "JOJOSoul-ng.py"
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "JOJOSoul-ng.py",
     ),
 )
 module = importlib.util.module_from_spec(spec)
@@ -75,7 +78,8 @@ class TestGame:
         assert game.player.crit_min == 0
 
     @patch("easygui.choicebox")
-    def test_set_difficulty(self, mock_choicebox):
+    @patch("sys.exit")  # Mock sys.exit 避免测试时退出
+    def test_set_difficulty(self, mock_choicebox, mock_exit):
         """测试难度设置"""
         game = Game()
 

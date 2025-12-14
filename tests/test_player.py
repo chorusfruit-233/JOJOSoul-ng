@@ -1,6 +1,6 @@
-import pytest
 import sys
 import os
+import pytest
 
 # 检查是否在 CI 环境中
 IS_CI = os.environ.get("CI", "false").lower() == "true"
@@ -14,7 +14,8 @@ import importlib.util
 spec = importlib.util.spec_from_file_location(
     "JOJOSoul",
     os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "JOJOSoul-ng.py"
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "JOJOSoul-ng.py",
     ),
 )
 module = importlib.util.module_from_spec(spec)
@@ -66,7 +67,7 @@ class TestPlayer:
         if IS_CI:
             # CI 环境中跳过 GUI 相关测试
             pytest.skip("跳过 CI 环境中的 GUI 测试")
-        
+
         player = Player()
         player.show_stats()
         captured = capsys.readouterr()

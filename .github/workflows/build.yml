@@ -48,7 +48,7 @@ jobs:
 
     - name: Check code quality
       run: |
-        flake8 JOJOSoul-ng.py
+        flake8 JOJOSoul-ng.py tests/ --extend-ignore=E402
         black --check .
 
   build-test:
