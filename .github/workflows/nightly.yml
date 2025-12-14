@@ -46,7 +46,7 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --windowed --name "${{ matrix.binary_name }}" JOJOSoul-ng.py
+        pyinstaller --onefile --name "${{ matrix.binary_name }}" JOJOSoul-ng.py
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
