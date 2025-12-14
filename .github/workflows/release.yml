@@ -14,12 +14,10 @@ jobs:
     steps:
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: JOJO Soul ${{ github.ref }}
+        tag_name: ${{ github.ref_name }}
+        name: JOJO Soul ${{ github.ref_name }}
         body: |
           ## JOJO Soul 游戏发布
           
@@ -43,6 +41,10 @@ jobs:
           查看完整更新日志请访问 [项目主页](https://github.com/chorusfruit-233/JOJOSoul-ng)
         draft: false
         prerelease: false
+        files: |
+          JOJOSoul-*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-upload:
     needs: create-release
@@ -110,40 +112,7 @@ jobs:
         cp -r .github release/
         tar -czf JOJOSoul-mac-${{ github.ref_name }}.tar.gz -C release .
 
-    - name: Upload Release Asset (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./JOJOSoul-linux-${{ github.ref_name }}.tar.gz
-        asset_name: JOJOSoul-linux-${{ github.ref_name }}.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./JOJOSoul-windows-${{ github.ref_name }}.zip
-        asset_name: JOJOSoul-windows-${{ github.ref_name }}.zip
-        asset_content_type: application/zip
-
-    - name: Upload Release Asset (macOS)
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./JOJOSoul-mac-${{ github.ref_name }}.tar.gz
-        asset_name: JOJOSoul-mac-${{ github.ref_name }}.tar.gz
-        asset_content_type: application/gzip
-
-  update-latest:
+    update-latest:
     needs: [create-release, build-and-upload]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
@@ -153,18 +122,22 @@ jobs:
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          const release = await github.rest.repos.getRelease({
+          // 获取最新的 release
+          const releases = await github.rest.repos.listReleases({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            release_id: ${{ needs.create-release.outputs.release_id }}
+            per_page: 1
           });
           
-          // 更新最新发布信息
-          await github.rest.repos.updateRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            release_id: release.data.id,
-            draft: false,
-            prerelease: false,
-            make_latest: "true"
-          });
+          if (releases.data.length > 0) {
+            const release = releases.data[0];
+            // 更新最新发布信息
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              draft: false,
+              prerelease: false,
+              make_latest: "true"
+            });
+          }
