@@ -112,6 +112,16 @@ JOJOSoul-ng/
 - **重构版**: 代码优化、添加测试、完善文档
 - **原版**: 基础游戏功能
 
+## 下载
+
+### 最新版本
+访问 [Releases 页面](https://github.com/chorusfruit-233/JOJOSoul-ng/releases) 下载最新稳定版本。
+
+### 夜间构建
+可以在 [Actions 页面](https://github.com/chorusfruit-233/JOJOSoul-ng/actions) 下载最新的测试构建。
+
+详细的发布信息请查看 [RELEASE.md](RELEASE.md)
+
 ## 贡献者
 
 - YricOTF (原作者)

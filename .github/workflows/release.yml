@@ -1,0 +1,170 @@
+name: Release JOJOSoul Game
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: JOJO Soul ${{ github.ref }}
+        body: |
+          ## JOJO Soul 游戏发布
+          
+          ### 新特性
+          - 基于 Python 的 JOJO 奇妙冒险同人游戏
+          - 完整的角色系统和战斗机制
+          - 五种元素属性战斗系统
+          - 商店系统和装备升级
+          - 多种难度选择
+          - 图形用户界面
+          
+          ### 安装说明
+          1. 下载对应平台的可执行文件
+          2. 直接运行即可开始游戏
+          
+          ### 系统要求
+          - Windows 10/11
+          - 支持图形界面的操作系统
+          
+          ### 更新日志
+          查看完整更新日志请访问 [项目主页](https://github.com/chorusfruit-233/JOJOSoul-ng)
+        draft: false
+        prerelease: false
+
+  build-and-upload:
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            os_name: linux
+            binary_name: JOJOSoul
+            binary_extension: ""
+          - os: windows-latest
+            os_name: windows
+            binary_name: JOJOSoul
+            binary_extension: ".exe"
+          - os: macos-latest
+            os_name: mac
+            binary_name: JOJOSoul
+            binary_extension: ""
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --onefile --windowed --name "${{ matrix.binary_name }}" JOJOSoul-ng.py
+
+    - name: Package for Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        mkdir -p release
+        cp dist/${{ matrix.binary_name }} release/
+        cp README.md release/
+        cp -r .github release/
+        tar -czf JOJOSoul-linux-${{ github.ref_name }}.tar.gz -C release .
+
+    - name: Package for Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        mkdir release
+        copy dist\${{ matrix.binary_name }}${{ matrix.binary_extension }} release\
+        copy README.md release\
+        xcopy /E /I .github release\.github
+        cd release
+        7z a -tzip ../JOJOSoul-windows-${{ github.ref_name }}.zip *
+        cd ..
+
+    - name: Package for macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        mkdir -p release
+        cp dist/${{ matrix.binary_name }} release/
+        cp README.md release/
+        cp -r .github release/
+        tar -czf JOJOSoul-mac-${{ github.ref_name }}.tar.gz -C release .
+
+    - name: Upload Release Asset (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./JOJOSoul-linux-${{ github.ref_name }}.tar.gz
+        asset_name: JOJOSoul-linux-${{ github.ref_name }}.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Release Asset (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./JOJOSoul-windows-${{ github.ref_name }}.zip
+        asset_name: JOJOSoul-windows-${{ github.ref_name }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset (macOS)
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./JOJOSoul-mac-${{ github.ref_name }}.tar.gz
+        asset_name: JOJOSoul-mac-${{ github.ref_name }}.tar.gz
+        asset_content_type: application/gzip
+
+  update-latest:
+    needs: [create-release, build-and-upload]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Update Latest Release
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const release = await github.rest.repos.getRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ needs.create-release.outputs.release_id }}
+          });
+          
+          // 更新最新发布信息
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: release.data.id,
+            draft: false,
+            prerelease: false,
+            make_latest: "true"
+          });

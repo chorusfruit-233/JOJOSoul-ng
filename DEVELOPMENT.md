@@ -120,4 +120,10 @@ pip install -r requirements.txt
 
 ## 发布流程
 
-项目使用 GitHub Actions 自动构建 Windows 可执行文件。当代码推送到 master 分支时，会自动触发构建流程。
+项目使用 GitHub Actions 自动构建多平台可执行文件：
+
+1. **推送到 master 分支**: 自动构建并上传 artifacts
+2. **推送版本标签**: 自动创建 Release 并上传多平台构建产物
+3. **夜间构建**: 每天自动运行测试和构建
+
+详细的发布指南请查看 [RELEASE.md](RELEASE.md)
