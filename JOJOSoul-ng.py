@@ -956,51 +956,82 @@ class Game:
     def run(self):
         # 显示模式选择（仅在启动时显示一次）
         if not hasattr(self, '_mode_selected'):
-            # 让用户选择显示模式
-            mode_choices = [
-                "GUI模式 (图形界面)",
-                "终端模式 (命令行界面)", 
-                "混合模式 (优先GUI，失败时使用终端)"
-            ]
+            # 优先尝试GUI模式，如果GUI不可用才回退到终端模式选择
+            from display_manager import DisplayManager
             
-            print("=== JOJO Soul - 显示模式选择 ===")
-            print("请选择您偏好的显示模式：")
-            for i, choice in enumerate(mode_choices):
-                print(f"{i+1}. {choice}")
-            
-            selected_mode = 'both'  # 默认值
-            while True:
-                try:
-                    selection = input("请输入选择 (1-3，默认为3): ").strip()
-                    if not selection:
-                        selection = "3"
-                    
-                    if selection == "1":
-                        selected_mode = 'gui'
-                        print("已选择：GUI模式")
-                        break
-                    elif selection == "2":
-                        selected_mode = 'terminal'
-                        print("已选择：终端模式")
-                        break
-                    elif selection == "3":
-                        selected_mode = 'both'
-                        print("已选择：混合模式")
-                        break
-                    else:
-                        print("无效选择，请输入1-3")
-                except KeyboardInterrupt:
-                    print("\n使用默认混合模式")
+            # 先尝试GUI模式
+            try:
+                import easygui
+                mode_choices = [
+                    "GUI模式 (图形界面)",
+                    "终端模式 (命令行界面)", 
+                    "混合模式 (优先GUI，失败时使用终端)"
+                ]
+                
+                selection = easygui.choicebox(
+                    "JOJO Soul - 显示模式选择\n\n请选择您偏好的显示模式：",
+                    "选择显示模式",
+                    choices=mode_choices
+                )
+                
+                if selection == "GUI模式 (图形界面)":
+                    selected_mode = 'gui'
+                elif selection == "终端模式 (命令行界面)":
+                    selected_mode = 'terminal'
+                elif selection == "混合模式 (优先GUI，失败时使用终端)":
                     selected_mode = 'both'
-                    break
-                except ValueError:
-                    print("请输入有效数字")
+                else:
+                    selected_mode = 'both'  # 默认混合模式
+            except:
+                # GUI不可用，使用终端模式选择
+                mode_choices = [
+                    "GUI模式 (图形界面)",
+                    "终端模式 (命令行界面)", 
+                    "混合模式 (优先GUI，失败时使用终端)"
+                ]
+                
+                print("=== JOJO Soul - 显示模式选择 ===")
+                print("请选择您偏好的显示模式：")
+                for i, choice in enumerate(mode_choices):
+                    print(f"{i+1}. {choice}")
+                
+                selected_mode = 'both'  # 默认值
+                while True:
+                    try:
+                        selection = input("请输入选择 (1-3，默认为3): ").strip()
+                        if not selection:
+                            selection = "3"
+                        
+                        if selection == "1":
+                            selected_mode = 'gui'
+                            print("已选择：GUI模式")
+                            break
+                        elif selection == "2":
+                            selected_mode = 'terminal'
+                            print("已选择：终端模式")
+                            break
+                        elif selection == "3":
+                            selected_mode = 'both'
+                            print("已选择：混合模式")
+                            break
+                        else:
+                            print("无效选择，请输入1-3")
+                    except KeyboardInterrupt:
+                        print("\n使用默认混合模式")
+                        selected_mode = 'both'
+                        break
+                    except ValueError:
+                        print("请输入有效数字")
             
             # 现在根据用户选择创建DisplayManager
-            from display_manager import DisplayManager
             self.display = DisplayManager(mode=selected_mode)
-            print(f"当前显示模式: {self.display.get_mode()}")
-            print("=== 开始游戏 ===\n")
+            
+            # 显示当前模式信息
+            if self.display.use_gui():
+                self.display.show_message("显示模式", f"当前显示模式: {self.display.get_mode()}")
+            else:
+                print(f"当前显示模式: {self.display.get_mode()}")
+                print("=== 开始游戏 ===\n")
             
             # 标记已选择模式，避免重复显示
             self._mode_selected = True
