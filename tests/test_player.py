@@ -15,8 +15,11 @@ spec = importlib.util.spec_from_file_location(
     ),
 )
 module = importlib.util.module_from_spec(spec)
-sys.modules["JOJOSoul"] = module
-spec.loader.exec_module(module)
+try:
+    spec.loader.exec_module(module)
+except Exception as e:
+    print(f"模块加载失败: {e}")
+    raise
 Player = module.Player
 
 
