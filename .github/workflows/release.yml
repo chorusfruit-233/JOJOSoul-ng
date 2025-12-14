@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
 
 jobs:
   create-release:
@@ -16,8 +22,8 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref_name }}
-        name: JOJO Soul ${{ github.ref_name }}
+        tag_name: ${{ github.ref_name || github.event.inputs.tag_name }}
+        name: JOJO Soul ${{ github.ref_name || github.event.inputs.tag_name }}
         body: |
           ## JOJO Soul 游戏发布
           
@@ -91,21 +97,21 @@ jobs:
         cp dist/${{ matrix.binary_name }} release/
         cp README.md release/
         cp -r .github release/
-        tar -czf JOJOSoul-linux-${{ github.ref_name }}.tar.gz -C release .
+        tar -czf JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
 
     - name: Package for Linux
       if: matrix.os == 'ubuntu-latest'
       run: |
         mkdir -p release
         cp dist/${{ matrix.binary_name }} release/
-        tar -czf JOJOSoul-linux-${{ github.ref_name }}.tar.gz -C release .
+        tar -czf JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
 
     - name: Package for macOS
       if: matrix.os == 'macos-latest'
       run: |
         mkdir -p release
         cp dist/${{ matrix.binary_name }} release/
-        tar -czf JOJOSoul-mac-${{ github.ref_name }}.tar.gz -C release .
+        tar -czf JOJOSoul-mac-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
 
     - name: Upload Release Asset (Linux)
       if: matrix.os == 'ubuntu-latest'
@@ -114,8 +120,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./JOJOSoul-linux-${{ github.ref_name }}.tar.gz
-        asset_name: JOJOSoul-linux-${{ github.ref_name }}.tar.gz
+        asset_path: ./JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
+        asset_name: JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
         asset_content_type: application/gzip
 
     - name: Upload Release Asset (Windows)
@@ -126,7 +132,7 @@ jobs:
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: ./dist/${{ matrix.binary_name }}${{ matrix.binary_extension }}
-        asset_name: JOJOSoul-windows-${{ github.ref_name }}${{ matrix.binary_extension }}
+        asset_name: JOJOSoul-windows-${{ github.ref_name || github.event.inputs.tag_name }}${{ matrix.binary_extension }}
         asset_content_type: application/vnd.microsoft.portable-executable
 
     - name: Upload Release Asset (macOS)
@@ -136,8 +142,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./JOJOSoul-mac-${{ github.ref_name }}.tar.gz
-        asset_name: JOJOSoul-mac-${{ github.ref_name }}.tar.gz
+        asset_path: ./JOJOSoul-mac-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
+        asset_name: JOJOSoul-mac-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
         asset_content_type: application/gzip
 
     update-latest:
