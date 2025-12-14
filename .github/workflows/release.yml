@@ -12,50 +12,7 @@ on:
         default: 'v1.0.0'
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      release_id: ${{ steps.create_release.outputs.id }}
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Generate Release Content
-      id: generate_content
-      run: |
-        VERSION="${{ github.ref_name || github.event.inputs.tag_name }}"
-        echo "Generating release content for version: $VERSION"
-        
-        # Generate release content using our script
-        python scripts/generate_release.py --version "$VERSION" --output release_body.md
-        
-        # Verify the content was generated
-        if [ -f "release_body.md" ]; then
-          echo "Release content generated successfully"
-          echo "RELEASE_BODY_FILE=release_body.md" >> $GITHUB_OUTPUT
-        else
-          echo "Failed to generate release content, using fallback"
-          echo "RELEASE_BODY_FILE=" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.ref_name || github.event.inputs.tag_name }}
-        name: JOJO Soul ${{ github.ref_name || github.event.inputs.tag_name }}
-        body_path: ${{ steps.generate_content.outputs.RELEASE_BODY_FILE }}
-        draft: false
-        prerelease: false
-        files: |
-          JOJOSoul-linux-*
-          JOJOSoul-mac-*
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      continue-on-error: true
-
-  build-and-upload:
-    needs: create-release
+  release:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -65,14 +22,17 @@ jobs:
             os_name: linux
             binary_name: JOJOSoul
             binary_extension: ""
+            asset_name: JOJOSoul-linux
           - os: windows-latest
             os_name: windows
             binary_name: JOJOSoul
             binary_extension: ".exe"
+            asset_name: JOJOSoul-windows
           - os: macos-latest
             os_name: mac
             binary_name: JOJOSoul
             binary_extension: ""
+            asset_name: JOJOSoul-mac
 
     steps:
     - uses: actions/checkout@v4
@@ -87,55 +47,37 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Generate Release Content (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        VERSION="${{ github.ref_name || github.event.inputs.tag_name }}"
+        echo "Generating release content for version: $VERSION"
+        python scripts/generate_release.py --version "$VERSION" --output release_body.md
+
     - name: Build with PyInstaller
       run: |
         pyinstaller --onefile --name "${{ matrix.binary_name }}" JOJOSoul-ng.py
 
-    - name: Package for Linux
-      if: matrix.os == 'ubuntu-latest'
+    - name: Package for Linux/macOS
+      if: matrix.os != 'windows-latest'
       run: |
         mkdir -p release
         cp dist/${{ matrix.binary_name }} release/
-        tar -czf JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
+        tar -czf ${{ matrix.asset_name }}-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
 
-    - name: Package for macOS
-      if: matrix.os == 'macos-latest'
-      run: |
-        mkdir -p release
-        cp dist/${{ matrix.binary_name }} release/
-        tar -czf JOJOSoul-mac-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz -C release .
-
-    - name: Upload Release Asset (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-release-asset@v1
+    - name: Create Release and Upload Assets
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name || github.event.inputs.tag_name }}
+        name: JOJO Soul ${{ github.ref_name || github.event.inputs.tag_name }}
+        body_path: release_body.md
+        draft: false
+        prerelease: false
+        files: |
+          ${{ matrix.asset_name }}-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
+          dist/${{ matrix.binary_name }}${{ matrix.binary_extension }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
-        asset_name: JOJOSoul-linux-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./dist/${{ matrix.binary_name }}${{ matrix.binary_extension }}
-        asset_name: JOJOSoul-windows-${{ github.ref_name || github.event.inputs.tag_name }}${{ matrix.binary_extension }}
-        asset_content_type: application/vnd.microsoft.portable-executable
-
-    - name: Upload Release Asset (macOS)
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./JOJOSoul-mac-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
-        asset_name: JOJOSoul-mac-${{ github.ref_name || github.event.inputs.tag_name }}.tar.gz
-        asset_content_type: application/gzip
+      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
   
