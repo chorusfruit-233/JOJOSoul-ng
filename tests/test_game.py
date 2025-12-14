@@ -114,7 +114,6 @@ class TestGame:
 
     def test_new_enemies_initialization(self):
         """测试新敌人初始化"""
-        game = Game()
         # 验证新敌人元素倍率设置正确
         # 冰霜巨人：火焰3.0, 水-1.5
         ice_giant_multipliers = {
@@ -183,7 +182,7 @@ class TestGame:
             assert "description" in achievement_data
             assert "completed" in achievement_data
             assert "reward" in achievement_data
-            assert achievement_data["completed"] == False
+            assert achievement_data["completed"] is False
             assert achievement_data["reward"] > 0
 
     def test_level_up_grants_skill_point(self):
@@ -209,7 +208,8 @@ class TestGame:
         crit = 1.0
 
         expected_damage = (
-            base_damage * element_mult * crit * game.player.element_damage_bonus
+            base_damage * element_mult * crit
+            * game.player.element_damage_bonus
         )
         assert expected_damage == 300.0
 
@@ -232,7 +232,7 @@ class TestGame:
         # 完成成就
         game.complete_achievement(achievement_name)
 
-        assert game.achievements[achievement_name]["completed"] == True
+        assert game.achievements[achievement_name]["completed"] is True
         assert (
             game.player.coin
             == original_coin + game.achievements[achievement_name]["reward"]

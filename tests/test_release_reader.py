@@ -31,7 +31,9 @@ class TestReleaseReader:
     def test_read_release_file_success(self):
         """Test successful file reading"""
         # Create a temporary release file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".md") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".md"
+        ) as f:
             f.write(
                 """# 发布指南
 
@@ -60,7 +62,9 @@ class TestReleaseReader:
     def test_parse_versions(self):
         """Test version parsing"""
         # Create a temporary release file with multiple versions
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".md") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".md"
+        ) as f:
             f.write(
                 """# 发布指南
 
@@ -100,7 +104,9 @@ class TestReleaseReader:
     def test_get_version_content(self):
         """Test getting version content"""
         # Create a temporary release file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".md") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".md"
+        ) as f:
             f.write(
                 """# 发布指南
 
@@ -136,7 +142,9 @@ class TestReleaseReader:
     def test_get_latest_version(self):
         """Test getting latest version"""
         # Create a temporary release file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".md") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".md"
+        ) as f:
             f.write(
                 """# 发布指南
 
@@ -187,7 +195,9 @@ class TestGetReleaseContent:
     def test_get_release_content_success(self):
         """Test successful content retrieval"""
         # Create a temporary release file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".md") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".md"
+        ) as f:
             f.write(
                 """# 发布指南
 

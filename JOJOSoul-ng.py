@@ -59,7 +59,10 @@ class Player:
             f"击败怪物: {self.monsters_defeated}"
         )
         if self.temporary_boost_turns > 0:
-            info += f"\n临时元素增强: {self.temporary_element_boost:.2f}x (剩余{self.temporary_boost_turns}回合)"
+            info += (
+                f"\n临时元素增强: {self.temporary_element_boost:.2f}x "
+                f"(剩余{self.temporary_boost_turns}回合)"
+            )
         print(info)
         # 同时也弹窗显示，体验更好
         easygui.msgbox(info, f"{self.name}的资料")
@@ -120,8 +123,10 @@ class Game:
                 "completed": False,
                 "reward": 500,
             },
-            "等级大师": {"description": "达到10级", "completed": False, "reward": 300},
-            "传奇勇者": {"description": "达到20级", "completed": False, "reward": 1000},
+            "等级大师": {"description": "达到10级", "completed": False,
+                     "reward": 300},
+            "传奇勇者": {"description": "达到20级", "completed": False,
+                     "reward": 1000},
             "元素大师": {
                 "description": "购买魔法袍",
                 "completed": False,
@@ -522,7 +527,8 @@ class Game:
                     else f"冷却中({skill_data['cooldown']}回合)"
                 )
                 skill_list.append(
-                    f"{skill_name} Lv.{skill_data['level']} [{cooldown_status}]"
+                    f"{skill_name} Lv.{skill_data['level']} "
+                    f"[{cooldown_status}]"
                 )
 
             skill_list.append("返回")
@@ -555,10 +561,10 @@ class Game:
         msg += f"当前冷却: {skill['cooldown']}回合\n\n"
 
         if skill["level"] == 0:
-            msg += f"学习此技能需要1个技能点"
+            msg += "学习此技能需要1个技能点"
             choices = ["学习技能", "返回"]
         else:
-            msg += f"升级技能需要1个技能点"
+            msg += "升级技能需要1个技能点"
             choices = ["升级技能", "使用技能", "返回"]
 
         action = easygui.choicebox(msg, f"{skill_name}管理", choices)
@@ -594,7 +600,9 @@ class Game:
             return damage
         elif skill_name == "治疗术":
             heal_amount = self.player.max_life * 0.5 * skill["level"]
-            self.player.life = min(self.player.life + heal_amount, self.player.max_life)
+            self.player.life = min(
+                self.player.life + heal_amount, self.player.max_life
+            )
             print(f"治疗术恢复了{heal_amount:.1f}点生命值！")
             return 0
         elif skill_name == "护盾":
@@ -646,19 +654,31 @@ class Game:
             self.complete_achievement("怪物猎人")
             newly_completed.append("怪物猎人")
 
-        if self.player.coin >= 1000 and not self.achievements["富有之人"]["completed"]:
+        if (
+            self.player.coin >= 1000
+            and not self.achievements["富有之人"]["completed"]
+        ):
             self.complete_achievement("富有之人")
             newly_completed.append("富有之人")
 
-        if self.player.coin >= 10000 and not self.achievements["大富翁"]["completed"]:
+        if (
+            self.player.coin >= 10000
+            and not self.achievements["大富翁"]["completed"]
+        ):
             self.complete_achievement("大富翁")
             newly_completed.append("大富翁")
 
-        if self.player.level >= 10 and not self.achievements["等级大师"]["completed"]:
+        if (
+            self.player.level >= 10
+            and not self.achievements["等级大师"]["completed"]
+        ):
             self.complete_achievement("等级大师")
             newly_completed.append("等级大师")
 
-        if self.player.level >= 20 and not self.achievements["传奇勇者"]["completed"]:
+        if (
+            self.player.level >= 20
+            and not self.achievements["传奇勇者"]["completed"]
+        ):
             self.complete_achievement("传奇勇者")
             newly_completed.append("传奇勇者")
 
@@ -691,7 +711,8 @@ class Game:
                 achievement["completed"] = True
                 self.player.coin += achievement["reward"]
                 print(
-                    f"成就完成：{achievement_name}，奖励{achievement['reward']}金币！"
+                    f"成就完成：{achievement_name}，"
+                    f"奖励{achievement['reward']}金币！"
                 )
 
     def show_achievements(self):
@@ -702,7 +723,8 @@ class Game:
         for name, data in self.achievements.items():
             status = "✅" if data["completed"] else "❌"
             msg += (
-                f"{status} {name}: {data['description']} (奖励: {data['reward']}金币)\n"
+                f"{status} {name}: {data['description']} "
+                f"(奖励: {data['reward']}金币)\n"
             )
             if data["completed"]:
                 completed_count += 1
@@ -758,7 +780,9 @@ class Game:
             "lmode": self.lmode,
             "amode": self.amode,
             "element_damage_bonus": self.player.element_damage_bonus,
-            "temporary_element_boost": self.player.temporary_element_boost,
+            "temporary_element_boost": (
+                self.player.temporary_element_boost
+            ),
             "temporary_boost_turns": self.player.temporary_boost_turns,
             "skill_points": self.player.skill_points,
         }
@@ -766,11 +790,15 @@ class Game:
         # 保存技能数据
         for skill_name, skill_data in self.player.skills.items():
             save_data[f"skill_{skill_name}_level"] = skill_data["level"]
-            save_data[f"skill_{skill_name}_cooldown"] = skill_data["cooldown"]
+            save_data[f"skill_{skill_name}_cooldown"] = (
+                skill_data["cooldown"]
+            )
 
         # 保存成就数据
         for achievement_name, achievement_data in self.achievements.items():
-            save_data[f"achievement_{achievement_name}"] = achievement_data["completed"]
+            save_data[f"achievement_{achievement_name}"] = (
+                achievement_data["completed"]
+            )
 
         try:
             with open("savegame.dat", "w") as f:
@@ -821,7 +849,9 @@ class Game:
             self.player.temporary_boost_turns = int(
                 save_data.get("temporary_boost_turns", 0)
             )
-            self.player.skill_points = int(save_data.get("skill_points", 0))
+            self.player.skill_points = int(
+                save_data.get("skill_points", 0)
+            )
 
             # 加载技能数据
             for skill_name in self.player.skills.keys():
@@ -835,7 +865,8 @@ class Game:
             # 加载成就数据
             for achievement_name in self.achievements.keys():
                 self.achievements[achievement_name]["completed"] = (
-                    save_data.get(f"achievement_{achievement_name}", "False") == "True"
+                    save_data.get(f"achievement_{achievement_name}", "False")
+                    == "True"
                 )
 
             return True

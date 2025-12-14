@@ -103,8 +103,8 @@ class TestPlayer:
         assert player.temporary_boost_turns == 0
         assert player.skill_points == 0
         assert len(player.skills) == 5
-        assert player.shield_active == False
-        assert player.time_slow_active == False
+        assert player.shield_active is False
+        assert player.time_slow_active is False
 
     def test_skill_points_on_level_up(self):
         """测试升级获得技能点"""
@@ -165,16 +165,16 @@ class TestPlayer:
         player = Player()
 
         # 默认状态应该是False
-        assert player.shield_active == False
-        assert player.time_slow_active == False
+        assert player.shield_active is False
+        assert player.time_slow_active is False
 
         # 激活护盾
         player.shield_active = True
-        assert player.shield_active == True
+        assert player.shield_active is True
 
         # 激活时间减缓
         player.time_slow_active = True
-        assert player.time_slow_active == True
+        assert player.time_slow_active is True
 
     def test_show_stats_includes_new_attributes(self, capsys):
         """测试显示信息包含新属性"""
