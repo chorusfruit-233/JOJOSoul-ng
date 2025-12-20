@@ -73,7 +73,7 @@ class TestGame:
         game.player.crit_min = 0
         game.check_stat_anomalies()
         captured = capsys.readouterr()
-        assert "属性异常，已恢复" in captured.out
+        assert "属性异常：伤害下限大于上限，已恢复" in captured.out
         assert game.player.crit_max == 2
         assert game.player.crit_min == 0
 
@@ -81,7 +81,12 @@ class TestGame:
     @patch("sys.exit")  # Mock sys.exit 避免测试时退出
     def test_set_difficulty(self, mock_choicebox, mock_exit):
         """测试难度设置"""
+        from unittest.mock import Mock
         game = Game()
+        # 设置display属性为Mock对象
+        game.display = Mock()
+        # 让display.get_choice返回mock_choicebox.return_value
+        game.display.get_choice = lambda title, choices: mock_choicebox.return_value
 
         # 测试无限金币版
         mock_choicebox.return_value = "无限金币版"

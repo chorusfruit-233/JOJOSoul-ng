@@ -198,7 +198,7 @@ JOJOSoul-ng/
 ## 贡献者
 
 - YricOTF (原作者)
-- 重构优化
+- chorusfruit-233 (重构优化)
 
 ## 许可证
 

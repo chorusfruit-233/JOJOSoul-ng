@@ -68,17 +68,24 @@ class TestPlayer:
             # CI 环境中跳过 GUI 相关测试
             pytest.skip("跳过 CI 环境中的 GUI 测试")
 
-        player = Player()
-        player.show_stats()
-        captured = capsys.readouterr()
-        assert "角色: 勇者" in captured.out
-        assert "等级: 1" in captured.out
-        assert "生命值: 100.0/100.0" in captured.out
-        assert "伤害: 10.0" in captured.out
-        assert "金币: 100" in captured.out
-        assert "伤害倍率: 0x - 2x" in captured.out
-        assert "纯氧数量: 0" in captured.out
-        assert "击败怪物: 0" in captured.out
+        # 设置显示模式为终端，确保测试有输出
+        from display_manager import set_display_mode, get_display_manager
+        original_mode = get_display_manager().get_mode()
+        try:
+            set_display_mode("terminal")
+            player = Player()
+            player.show_stats()
+            captured = capsys.readouterr()
+            assert "角色: 勇者" in captured.out
+            assert "等级: 1" in captured.out
+            assert "生命值: 100.0/100.0" in captured.out
+            assert "伤害: 10.0" in captured.out
+            assert "金币: 100" in captured.out
+            assert "伤害倍率: 0x - 2x" in captured.out
+            assert "纯氧数量: 0" in captured.out
+            assert "击败怪物: 0" in captured.out
+        finally:
+            set_display_mode(original_mode)
 
     def test_gain_exp(self):
         """测试经验值获得"""
@@ -182,11 +189,18 @@ class TestPlayer:
             # CI 环境中跳过 GUI 相关测试
             pytest.skip("跳过 CI 环境中的 GUI 测试")
 
-        player = Player()
-        player.show_stats()
-        captured = capsys.readouterr()
-        assert "元素伤害加成: 1.00x" in captured.out
-        assert "技能点: 0" in captured.out
+        # 设置显示模式为终端，确保测试有输出
+        from display_manager import set_display_mode, get_display_manager
+        original_mode = get_display_manager().get_mode()
+        try:
+            set_display_mode("terminal")
+            player = Player()
+            player.show_stats()
+            captured = capsys.readouterr()
+            assert "元素伤害加成: 1.00x" in captured.out
+            assert "技能点: 0" in captured.out
+        finally:
+            set_display_mode(original_mode)
 
     def test_show_stats_with_temporary_boost(self, capsys):
         """测试显示临时增强状态"""
@@ -194,9 +208,16 @@ class TestPlayer:
             # CI 环境中跳过 GUI 相关测试
             pytest.skip("跳过 CI 环境中的 GUI 测试")
 
-        player = Player()
-        player.temporary_element_boost = 2.0
-        player.temporary_boost_turns = 3
-        player.show_stats()
-        captured = capsys.readouterr()
-        assert "临时元素增强: 2.00x (剩余3回合)" in captured.out
+        # 设置显示模式为终端，确保测试有输出
+        from display_manager import set_display_mode, get_display_manager
+        original_mode = get_display_manager().get_mode()
+        try:
+            set_display_mode("terminal")
+            player = Player()
+            player.temporary_element_boost = 2.0
+            player.temporary_boost_turns = 3
+            player.show_stats()
+            captured = capsys.readouterr()
+            assert "临时元素增强: 2.00x (剩余3回合)" in captured.out
+        finally:
+            set_display_mode(original_mode)

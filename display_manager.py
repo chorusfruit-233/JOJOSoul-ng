@@ -69,13 +69,19 @@ class DisplayManager:
             title (str): 消息标题
             message (str): 消息内容
         """
-        # 终端显示
+        # GUI显示 - 优先尝试GUI
+        if self.use_gui() and self.easygui:
+            try:
+                self.easygui.msgbox(message, title)
+                return  # GUI成功，不输出终端
+            except Exception:
+                # GUI失败，继续使用终端
+                if self.mode == "gui":
+                    print(f"GUI失败，切换到终端模式", file=sys.stderr)
+        
+        # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(f"[{title}] {message}")
-
-        # GUI显示 - 仅在GUI模式下
-        elif self.use_gui():
-            self.easygui.msgbox(message, title)
 
     def show_info(self, info):
         """
@@ -84,6 +90,17 @@ class DisplayManager:
         Args:
             info (str): 信息内容
         """
+        # GUI显示 - 优先尝试GUI
+        if self.use_gui() and self.easygui:
+            try:
+                self.easygui.msgbox(info, "信息")
+                return  # GUI成功，不输出终端
+            except Exception:
+                # GUI失败，继续使用终端
+                if self.mode == "gui":
+                    print(f"GUI失败，切换到终端模式", file=sys.stderr)
+        
+        # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(info)
 
@@ -134,9 +151,6 @@ class DisplayManager:
                 try:
                     result = self.easygui.choicebox(title, choices=choices)
                     if result is not None:
-                        # 同时在终端显示选择结果
-                        print(f"\n{title}")
-                        print(f"用户选择: {result}")
                         return result
                 except Exception:
                     print("GUI失败，使用终端模式", file=sys.stderr)
@@ -210,10 +224,6 @@ class DisplayManager:
                         message, title, choices=["是", "否"]
                     )
                     if result is not None:
-                        # 同时在终端显示选择结果
-                        print(f"\n{title}")
-                        print(f"{message}")
-                        print(f"用户选择: {result}")
                         return result == "是"
                 except Exception:
                     print("GUI失败，使用终端模式", file=sys.stderr)
@@ -268,9 +278,6 @@ class DisplayManager:
                 try:
                     result = self.easygui.enterbox(prompt, title)
                     if result is not None:
-                        # 同时在终端显示输入结果
-                        print(f"\n{title}")
-                        print(f"用户输入: {result}")
                         return result
                 except Exception:
                     print("GUI失败，使用终端模式", file=sys.stderr)
@@ -310,26 +317,38 @@ class DisplayManager:
 ================
 """
 
-        # 终端显示
+        # GUI显示 - 优先尝试GUI
+        if self.use_gui() and self.easygui:
+            try:
+                self.easygui.msgbox(info, "角色信息")
+                return  # GUI成功，不输出终端
+            except Exception:
+                # GUI失败，继续使用终端
+                if self.mode == "gui":
+                    print(f"GUI失败，切换到终端模式", file=sys.stderr)
+        
+        # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(info)
-
-        # GUI显示
-        elif self.use_gui():
-            self.easygui.msgbox(info, "角色信息")
 
     def show_battle_info(self, title, message):
         """
         显示战斗相关信息
         """
-        # 终端显示
+        # GUI显示 - 优先尝试GUI
+        if self.use_gui() and self.easygui:
+            try:
+                self.easygui.msgbox(message, title)
+                return  # GUI成功，不输出终端
+            except Exception:
+                # GUI失败，继续使用终端
+                if self.mode == "gui":
+                    print(f"GUI失败，切换到终端模式", file=sys.stderr)
+        
+        # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(f"\n=== {title} ===")
             print(message)
-
-        # GUI显示
-        elif self.use_gui():
-            self.easygui.msgbox(message, title)
 
 
 # 全局显示管理器实例（默认混合模式）

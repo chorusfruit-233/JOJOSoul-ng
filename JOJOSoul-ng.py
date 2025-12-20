@@ -66,9 +66,7 @@ class Player:
         from display_manager import get_display_manager
 
         display = get_display_manager()
-        display.show_info(info)
-        if display.is_gui_enabled():
-            display.show_message("角色信息", info)
+        display.show_message("角色信息", info)
 
     def gain_exp(self, amount):
         """获得经验值并升级"""
@@ -89,18 +87,20 @@ class Player:
         self.skill_points += 1  # 每次升级获得1个技能点
 
         # 升级信息
-        # 由于Player类在创建时可能还没有display_manager，使用简单的print
-        print("生命上限 +10，攻击力 +2，技能点 +1")
-        time.sleep(1)
-
-        # 尝试使用display_manager（如果可用）
         try:
             from display_manager import get_display_manager
 
             display = get_display_manager()
-            display.show_message("升级", f"🎉 恭喜升级到 {self.level} 级！")
+            display.show_message(
+                "升级",
+                f"🎉 恭喜升级到 {self.level} 级！\n"
+                f"生命上限 +10，攻击力 +2，技能点 +1"
+            )
+            time.sleep(1)
         except Exception:
-            pass
+            # 如果display_manager不可用，使用简单的print（终端模式）
+            print("生命上限 +10，攻击力 +2，技能点 +1")
+            time.sleep(1)
 
 
 class Game:
@@ -162,6 +162,21 @@ class Game:
                 "completed": False,
                 "reward": 800,
             },
+            "技能专家": {
+                "description": "单个技能达到5级",
+                "completed": False,
+                "reward": 500,
+            },
+            "技能宗师": {
+                "description": "所有技能达到5级",
+                "completed": False,
+                "reward": 2000,
+            },
+            "技能收藏家": {
+                "description": "学习所有5个技能",
+                "completed": False,
+                "reward": 300,
+            },
             "雪山征服者": {
                 "description": "击败冰霜巨人",
                 "completed": False,
@@ -190,12 +205,40 @@ class Game:
         }
 
     def set_difficulty(self):
-        mode = self.display.get_choice(
-            "选择难度",
-            ["无限金币版", "简单", "普通", "坤难", "炼狱"],
-        )
-        if not mode:
-            sys.exit()
+        if self.display is None:
+            # 终端模式下的简单选择
+            print("=== 选择难度 ===")
+            print("1. 无限金币版")
+            print("2. 简单")
+            print("3. 普通")
+            print("4. 坤难")
+            print("5. 炼狱")
+            while True:
+                choice = input("请输入选择 (1-5): ").strip()
+                if choice == "1":
+                    mode = "无限金币版"
+                    break
+                elif choice == "2":
+                    mode = "简单"
+                    break
+                elif choice == "3":
+                    mode = "普通"
+                    break
+                elif choice == "4":
+                    mode = "坤难"
+                    break
+                elif choice == "5":
+                    mode = "炼狱"
+                    break
+                else:
+                    print("无效选择，请重新输入")
+        else:
+            mode = self.display.get_choice(
+                "选择难度",
+                ["无限金币版", "简单", "普通", "坤难", "炼狱"],
+            )
+            if not mode:
+                sys.exit()
 
         if mode == "无限金币版":
             self.player.coin = 1145141919810
@@ -211,11 +254,23 @@ class Game:
     def check_stat_anomalies(self):
         # 检查并修复属性异常（原代码中的彩蛋/Bug修复逻辑）
         if self.player.crit_max == self.player.crit_min:
-            print("恭喜你发现彩蛋！奖励810金币！")
+            if self.display:
+                self.display.show_message("彩蛋发现", "恭喜你发现彩蛋！奖励810金币！")
+            else:
+                print("恭喜你发现彩蛋！奖励810金币！")
             self.player.coin += 810
             self.player.crit_max, self.player.crit_min = 2, 0
+        elif self.player.crit_min > self.player.crit_max:
+            if self.display:
+                self.display.show_message("属性异常", "属性异常：伤害下限大于上限，已恢复")
+            else:
+                print("属性异常：伤害下限大于上限，已恢复")
+            self.player.crit_max, self.player.crit_min = 2, 0
         elif self.player.crit_max <= 0 or self.player.crit_min < 0:
-            print("属性异常，已恢复")
+            if self.display:
+                self.display.show_message("属性异常", "属性异常，已恢复")
+            else:
+                print("属性异常，已恢复")
             self.player.crit_max, self.player.crit_min = 2, 0
 
     def get_attack_multiplier(self):
@@ -232,10 +287,28 @@ class Game:
         enemy_hp = base_hp * self.lmode
         enemy_atk = base_atk * self.amode
 
+        # 战斗开始时重置技能状态
+        self.player.shield_active = False
+        self.player.time_slow_active = False
+
         # 熔岩怪特殊机制：如果倍率是正数代表造成伤害，原代码中熔岩怪火属性是 +，代表回血（反向伤害）
         # 这里为了统一逻辑：multipliers 中正值为对敌人造成伤害倍率，负值为敌人回血倍率
 
         while True:
+            # 每回合更新技能冷却
+            self.update_skill_cooldowns()
+            
+            # 自动使用技能
+            skill_damage = self.auto_use_skills(enemy_atk, enemy_hp)
+            if skill_damage > 0:
+                enemy_hp -= skill_damage
+                self.display.show_battle_info(
+                    "技能伤害", f"技能造成 {skill_damage} 点伤害！"
+                )
+                # 检查敌人是否被技能击败
+                if enemy_hp <= 0:
+                    break
+            
             crit = self.get_attack_multiplier()
             choice = self.display.get_choice(
                 f"对战 {name} - 选择攻击元素", self.elements
@@ -257,7 +330,7 @@ class Game:
                 self.player.temporary_boost_turns -= 1
                 if self.player.temporary_boost_turns == 0:
                     self.player.temporary_element_boost = 1.0
-                    print("元素增强效果已结束！")
+                    self.display.show_info("元素增强效果已结束！")
 
             damage = self.player.attack * dmg_mult * crit * total_element_bonus
 
@@ -281,7 +354,50 @@ class Game:
                     print(absorb_info)
 
             # 敌人攻击
-            self.player.life -= enemy_atk
+            # 检查时间减缓效果：敌人跳过攻击
+            if self.player.time_slow_active and self.player.time_slow_active > 0:
+                self.display.show_battle_info("时间减缓", f"敌人被减缓时间，跳过攻击！（剩余{self.player.time_slow_active}回合）")
+                self.player.time_slow_active -= 1  # 减少剩余回合数
+                # 如果时间减缓仍然有效，完全跳过敌人攻击
+                if self.player.time_slow_active > 0:
+                    # 时间减缓仍然有效，敌人不攻击，直接进入下一回合
+                    pass
+                else:
+                    # 时间减缓效果结束
+                    self.player.time_slow_active = False
+                    self.display.show_battle_info("时间减缓", "时间减缓效果已结束！")
+                # 无论时间减缓是否结束，只要这一回合时间减缓生效，就跳过敌人攻击
+                # 继续显示战斗信息，但不执行伤害计算
+            else:
+                # 没有时间减缓效果，执行正常攻击逻辑
+                # 检查护盾效果
+                actual_damage = enemy_atk
+                if self.player.shield_active and isinstance(self.player.shield_active, dict):
+                    # 处理护盾效果
+                    shield_data = self.player.shield_active
+                    reduction = shield_data.get("reduction", 0.5)
+                    actual_damage = enemy_atk * reduction
+                    shield_type = shield_data.get("type", "normal")
+                    # 更新护盾类型映射，包含所有类型
+                    type_display_map = {
+                        "normal": "普通护盾",
+                        "strong": "强力护盾", 
+                        "super": "超强护盾",
+                        "legendary": "传奇护盾",
+                        "epic": "史诗护盾"
+                    }
+                    type_display = type_display_map.get(shield_type, "护盾")
+                    self.display.show_battle_info(type_display, f"{type_display}生效！伤害减为{int(reduction*100)}%：{actual_damage:.1f}")
+                    # 减少护盾剩余回合数
+                    shield_data["turns"] -= 1
+                    if shield_data["turns"] <= 0:
+                        self.player.shield_active = False  # 护盾效果结束
+                        self.display.show_battle_info("护盾", "护盾效果已消失！")
+                
+                # 应用伤害
+                self.player.life -= actual_damage
+                if actual_damage > 0:
+                    self.display.show_battle_info("敌人攻击", f"敌人造成{actual_damage:.1f}点伤害！")
 
             time.sleep(1)
             # 显示战斗血量信息
@@ -376,7 +492,7 @@ class Game:
         enemy_atk = 50
         turn_limit = 12
 
-        print('普奇神父向你靠来:"[MADE IN HEAVEN!]"')
+        self.display.show_battle_info("Boss登场", '普奇神父向你靠来:"[MADE IN HEAVEN!]"')
 
         while True:
             crit = self.get_attack_multiplier()
@@ -387,7 +503,7 @@ class Game:
                 sys.exit()
 
             if turn_limit <= 0:
-                print("世界重启了，你噶了")
+                self.display.show_message("游戏结束", "世界重启了，你噶了")
                 sys.exit()
 
             # 1=命中, 2=闪避(除非特殊攻击)
@@ -494,13 +610,14 @@ class Game:
 
     def shop(self):
         while True:
-            f"金币剩余: {self.player.coin}"
             # 根据玩家等级解锁新物品
             choices = [
                 "盔甲 [100G, +30HP上限]",
                 "剑 [100G, +5伤害]",
                 "药水 [50G, 回满HP]",
                 "宝箱 [70G, 随机抽奖]",
+                "技能点 [200G, +1技能点]",
+                "技能全满 [100000G, 所有技能升至10级]",
             ]
 
             # 等级3解锁新装备
@@ -519,7 +636,7 @@ class Game:
                 choices.append("元素卷轴 [120G, 临时增强元素伤害]")
 
             choices.append("离开商店")
-            x = self.display.get_choice("商店", choices)
+            x = self.display.get_choice(f"商店 (金币: {self.player.coin})", choices)
 
             if not x or x == "离开商店":
                 break
@@ -547,6 +664,15 @@ class Game:
                     self.no_money()
             elif "宝箱" in x:
                 self.open_chest()
+            elif "技能点" in x:
+                if self.player.coin >= 200:
+                    self.player.skill_points += 1
+                    self.player.coin -= 200
+                    self.display.show_message("购买成功", "获得1个技能点！")
+                else:
+                    self.no_money()
+            elif "技能全满" in x:
+                self.upgrade_all_skills_to_max()
             elif "魔法袍" in x:
                 if self.player.coin >= 200:
                     self.player.element_damage_bonus += 0.15
@@ -590,6 +716,72 @@ class Game:
     def no_money(self):
         self.display.show_message("错误", "金币不足！")
 
+    def upgrade_all_skills_to_max(self):
+        """将所有技能升级到10级"""
+        if self.player.coin < 100000:
+            self.no_money()
+            return False
+        
+        # 确认购买
+        confirm_msg = "花费100000金币将所有技能升级到10级？\n\n"
+        skills_upgraded = 0
+        for skill_name, skill_data in self.player.skills.items():
+            if skill_data["level"] < 10:
+                skills_upgraded += 1
+                confirm_msg += f"{skill_name}: Lv.{skill_data['level']} → Lv.10\n"
+        
+        if skills_upgraded == 0:
+            self.display.show_message("提示", "所有技能都已达到10级！")
+            return False
+        
+        if not self.display.get_yes_no("确认购买", confirm_msg):
+            return False
+        
+        # 扣除金币并升级所有技能
+        self.player.coin -= 100000
+        skills_actually_upgraded = 0
+        
+        for skill_name, skill_data in self.player.skills.items():
+            if skill_data["level"] < 10:
+                old_level = skill_data["level"]
+                skill_data["level"] = 10
+                skills_actually_upgraded += 1
+        
+        # 显示成功信息
+        success_msg = f"花费100000金币将所有技能升级到10级！\n升级了{skills_actually_upgraded}个技能。"
+        self.display.show_message("购买成功", success_msg)
+        
+        # 检查技能相关成就
+        self.check_skill_achievements()
+        
+        return True
+    
+    def check_skill_achievements(self):
+        """检查技能相关成就（单独调用，便于重用）"""
+        # 检查技能新手成就（如果还有未完成的）
+        skills_learned = sum(1 for skill in self.player.skills.values() if skill["level"] > 0)
+        if skills_learned >= 1 and not self.achievements["技能新手"]["completed"]:
+            self.complete_achievement("技能新手")
+        
+        # 检查技能大师成就（所有技能达到3级）
+        if all(skill["level"] >= 3 for skill in self.player.skills.values()):
+            if not self.achievements["技能大师"]["completed"]:
+                self.complete_achievement("技能大师")
+        
+        # 检查技能专家成就（单个技能达到10级）
+        max_skill_level = max(skill["level"] for skill in self.player.skills.values())
+        if max_skill_level >= 10 and not self.achievements["技能专家"]["completed"]:
+            self.complete_achievement("技能专家")
+        
+        # 检查技能宗师成就（所有技能达到10级）
+        if all(skill["level"] >= 10 for skill in self.player.skills.values()):
+            if not self.achievements["技能宗师"]["completed"]:
+                self.complete_achievement("技能宗师")
+        
+        # 检查技能收藏家成就（学习所有5个技能）
+        if skills_learned >= 5 and not self.achievements["技能收藏家"]["completed"]:
+            self.complete_achievement("技能收藏家")
+
     def use_element_scroll(self):
         """使用元素卷轴，临时增强元素伤害"""
         self.player.coin -= 120
@@ -609,7 +801,6 @@ class Game:
     def skill_menu(self):
         """技能菜单"""
         while True:
-            f"技能点: {self.player.skill_points}\n\n"
             skill_list = []
             for skill_name, skill_data in self.player.skills.items():
                 cooldown_status = (
@@ -624,7 +815,7 @@ class Game:
 
             skill_list.append("返回")
 
-            choice = self.display.get_choice("技能系统", skill_list)
+            choice = self.display.get_choice(f"技能系统 (技能点: {self.player.skill_points})", skill_list)
             if not choice or choice == "返回":
                 break
 
@@ -637,32 +828,47 @@ class Game:
         """管理单个技能"""
         skill = self.player.skills[skill_name]
 
-        # 技能描述
+        # 技能描述（根据等级变化）
         descriptions = {
-            "火球术": "造成50点火焰伤害，无视元素倍率",
-            "治疗术": "恢复50%最大生命值",
-            "护盾": "下回合受到伤害减半",
-            "元素爆发": "所有元素伤害倍率x2，持续3回合",
-            "时间减缓": "敌人下回合无法攻击",
+            "火球术": "造成火焰伤害，无视元素倍率（每级提升伤害，每级减少冷却，Lv1:40伤害, Lv10:230伤害）",
+            "治疗术": "恢复生命值，可突破生命值上限（每级提升治疗量，每级减少冷却，Lv1:40%最大生命值, Lv10:220%最大生命值）",
+            "护盾": "减少受到的伤害（每级提升减伤效果，每级减少冷却，Lv1:伤害减半1回合, Lv10:伤害减为5%4回合）",
+            "元素爆发": "提升元素伤害（每级提升加成效果和持续时间，每级减少冷却，Lv1:+50%3回合, Lv10:+300%6回合）",
+            "时间减缓": "减缓敌人行动（每级增加跳过回合数，每级减少冷却，Lv1:跳过1回合, Lv10:跳过8回合）",
         }
 
-        f"{skill_name} (等级: {skill['level']})\n\n"
-        f"描述: {descriptions.get(skill_name, '未知技能')}\n"
-        f"冷却时间: {skill['max_cooldown']}回合\n"
-        f"当前冷却: {skill['cooldown']}回合\n\n"
-
+        # 显示技能信息
+        info = (
+            f"{skill_name} (等级: {skill['level']})\n\n"
+            f"描述: {descriptions.get(skill_name, '未知技能')}\n"
+            f"冷却时间: {skill['max_cooldown']}回合\n"
+            f"当前冷却: {skill['cooldown']}回合\n\n"
+        )
+        
         if skill["level"] == 0:
-            "学习此技能需要1个技能点"
+            info += "学习此技能需要1个技能点\n"
             choices = ["学习技能", "返回"]
+        elif skill["level"] >= 10:
+            info += "技能已达到最大等级（10级）\n"
+            choices = ["使用技能", "返回"]
         else:
-            "升级技能需要1个技能点"
+            info += "升级技能需要1个技能点\n"
             choices = ["升级技能", "使用技能", "返回"]
+        
+        self.display.show_info(info)
 
         action = self.display.get_choice(f"{skill_name}管理", choices)
         if not action or action == "返回":
             return
 
         if action == "学习技能" or action == "升级技能":
+            # 检查技能是否已达到最大等级
+            if skill["level"] >= 10:
+                from display_manager import get_display_manager
+                display = get_display_manager()
+                display.show_message("错误", "技能已达到最大等级（10级），无法继续升级！")
+                return
+                
             if self.player.skill_points >= 1:
                 self.player.skill_points -= 1
                 skill["level"] += 1
@@ -678,6 +884,8 @@ class Game:
                     self.complete_achievement("技能新手")
                     display.show_message("成就解锁", "🏆 成就解锁：技能新手！")
             else:
+                from display_manager import get_display_manager
+                display = get_display_manager()
                 display.show_message("错误", "技能点不足！")
         elif action == "使用技能":
             if skill["cooldown"] > 0:
@@ -688,48 +896,209 @@ class Game:
     def use_skill(self, skill_name):
         """使用技能"""
         skill = self.player.skills[skill_name]
+        
+        # 检查技能是否已学习（等级>0）
+        if skill["level"] == 0:
+            self.display.show_message("错误", "技能尚未学习！")
+            return 0
+            
+        # 检查冷却
+        if skill["cooldown"] > 0:
+            self.display.show_message("错误", "技能还在冷却中！")
+            return 0
+
+        damage = 0  # 默认伤害为0
+        skill_level = skill["level"]
 
         if skill_name == "火球术":
-            damage = 50 * skill["level"]
+            # 火球术：等级1=40, 等级2=70, 等级3=95, 等级4=115, 等级5=130
+            # 等级6=150, 等级7=170, 等级8=190, 等级9=210, 等级10=230
+            base_damages = {1: 40, 2: 70, 3: 95, 4: 115, 5: 130, 6: 150, 7: 170, 8: 190, 9: 210, 10: 230}
+            damage = base_damages.get(skill_level, 40)
             self.display.show_battle_info(
                 "火球术", f"造成{damage}点火焰伤害！"
             )
-            return damage
         elif skill_name == "治疗术":
-            heal_amount = self.player.max_life * 0.5 * skill["level"]
-            self.player.life = min(
-                self.player.life + heal_amount, self.player.max_life
-            )
+            # 治疗术：等级1=40%, 等级2=65%, 等级3=85%, 等级4=100%, 等级5=120%
+            # 等级6=140%, 等级7=160%, 等级8=180%, 等级9=200%, 等级10=220%
+            heal_percentages = {1: 0.4, 2: 0.65, 3: 0.85, 4: 1.0, 5: 1.2, 6: 1.4, 7: 1.6, 8: 1.8, 9: 2.0, 10: 2.2}
+            heal_percent = heal_percentages.get(skill_level, 0.4)
+            heal_amount = self.player.max_life * heal_percent
+            self.player.life = self.player.life + heal_amount
             self.display.show_battle_info(
-                "治疗", f"治疗术恢复了{heal_amount:.1f}点生命值！"
+                "治疗", f"治疗术恢复了{heal_amount:.1f}点生命值！当前生命值：{self.player.life:.1f}"
             )
-            return 0
         elif skill_name == "护盾":
-            self.display.show_battle_info(
-                "护盾", "护盾激活！下回合受到伤害减半！"
-            )
-            self.player.shield_active = True
-            return 0
+            # 护盾：等级1-2=伤害减半1回合，等级3=伤害减为40%1回合
+            # 等级4=伤害减为30%2回合，等级5=伤害减为20%2回合
+            # 等级6=伤害减为15%2回合，等级7=伤害减为10%2回合
+            # 等级8=伤害减为10%3回合，等级9=伤害减为5%3回合，等级10=伤害减为5%4回合
+            if skill_level >= 8:
+                # 等级8-10：史诗护盾
+                reduction = 0.1 if skill_level == 8 else 0.05
+                turns = 3 if skill_level <= 9 else 4
+                shield_type = "史诗护盾"
+                self.display.show_battle_info(
+                    "护盾", f"{shield_type}激活！下{turns}回合伤害减为{int(reduction*100)}%！"
+                )
+                self.player.shield_active = {"type": "epic", "reduction": reduction, "turns": turns}
+            elif skill_level >= 6:
+                # 等级6-7：传奇护盾
+                reduction = 0.15 if skill_level == 6 else 0.1
+                shield_type = "传奇护盾"
+                self.display.show_battle_info(
+                    "护盾", f"{shield_type}激活！下2回合伤害减为{int(reduction*100)}%！"
+                )
+                self.player.shield_active = {"type": "legendary", "reduction": reduction, "turns": 2}
+            elif skill_level >= 4:
+                # 等级4-5：超强护盾，持续2回合
+                reduction = 0.3 if skill_level == 4 else 0.2
+                shield_type = "超强护盾"
+                self.display.show_battle_info(
+                    "护盾", f"{shield_type}激活！下2回合伤害减为{int(reduction*100)}%！"
+                )
+                self.player.shield_active = {"type": "super", "reduction": reduction, "turns": 2}
+            elif skill_level == 3:
+                self.display.show_battle_info(
+                    "护盾", "强力护盾激活！下回合伤害减为40%！"
+                )
+                self.player.shield_active = {"type": "strong", "reduction": 0.4, "turns": 1}
+            else:
+                self.display.show_battle_info(
+                    "护盾", "护盾激活！下回合受到伤害减半！"
+                )
+                self.player.shield_active = {"type": "normal", "reduction": 0.5, "turns": 1}
         elif skill_name == "元素爆发":
-            self.player.element_damage_bonus *= 2.0
+            # 元素爆发：等级1=+50%, 等级2=+80%, 等级3=+100%, 等级4=+120%, 等级5=+150%持续4回合
+            # 等级6=+180%持续4回合，等级7=+210%持续4回合，等级8=+240%持续5回合，等级9=+270%持续5回合，等级10=+300%持续6回合
+            boost_values = {1: 0.5, 2: 0.8, 3: 1.0, 4: 1.2, 5: 1.5, 6: 1.8, 7: 2.1, 8: 2.4, 9: 2.7, 10: 3.0}
+            boost = boost_values.get(skill_level, 0.5)
+            self.player.temporary_element_boost = 1.0 + boost
+            # 设置持续回合数：1-3级=3回合，4-7级=4回合，8-10级=5回合，10级额外增加1回合
+            if skill_level >= 10:
+                self.player.temporary_boost_turns = 6
+            elif skill_level >= 8:
+                self.player.temporary_boost_turns = 5
+            elif skill_level >= 4:
+                self.player.temporary_boost_turns = 4
+            else:
+                self.player.temporary_boost_turns = 3
             self.display.show_battle_info(
-                "元素爆发", "所有元素伤害倍率x2，持续3回合！"
+                "元素爆发", f"元素爆发！所有元素伤害提升{int(boost*100)}%，持续{self.player.temporary_boost_turns}回合！"
             )
-            return 0
         elif skill_name == "时间减缓":
-            self.display.show_battle_info("时间减缓", "敌人下回合无法攻击！")
-            self.player.time_slow_active = True
-            return 0
-
-        # 设置冷却
-        skill["cooldown"] = skill["max_cooldown"]
-        return 0
+            # 时间减缓：等级1-2=跳过1回合，等级3-4=跳过2回合，等级5=跳过3回合
+            # 等级6=跳过4回合，等级7=跳过5回合，等级8=跳过6回合，等级9=跳过7回合，等级10=跳过8回合
+            if skill_level <= 2:
+                skip_turns = 1
+            elif skill_level <= 4:
+                skip_turns = 2
+            elif skill_level == 5:
+                skip_turns = 3
+            elif skill_level == 6:
+                skip_turns = 4
+            elif skill_level == 7:
+                skip_turns = 5
+            elif skill_level == 8:
+                skip_turns = 6
+            elif skill_level == 9:
+                skip_turns = 7
+            else:  # 等级10
+                skip_turns = 8
+            self.display.show_battle_info(
+                "时间减缓", f"时间减缓！敌人跳过{skip_turns}回合攻击！"
+            )
+            self.player.time_slow_active = skip_turns
+        
+        # 设置冷却时间（每次升级都有冷却缩减）
+        base_cooldown = skill["max_cooldown"]
+        
+        # 基础冷却缩减：每级减少0.15回合
+        level_reduction = skill_level * 0.15
+        
+        # 5级额外奖励：额外减少0.5回合
+        if skill_level >= 5:
+            level_reduction += 0.5
+        
+        # 10级额外奖励：再额外减少0.5回合
+        if skill_level >= 10:
+            level_reduction += 0.5
+        
+        # 计算实际冷却（四舍五入，最低为1回合）
+        actual_cooldown = max(1, round(base_cooldown - level_reduction))
+        skill["cooldown"] = actual_cooldown
+        
+        # 显示冷却信息（仅在冷却减少时显示）
+        if actual_cooldown < base_cooldown:
+            reduction_amount = base_cooldown - actual_cooldown
+            self.display.show_battle_info("技能冷却", f"技能冷却减少{reduction_amount}回合！当前冷却：{actual_cooldown}回合")
+        
+        return damage
 
     def update_skill_cooldowns(self):
         """更新技能冷却"""
         for skill_name, skill_data in self.player.skills.items():
             if skill_data["cooldown"] > 0:
                 skill_data["cooldown"] -= 1
+
+    def auto_use_skills(self, enemy_atk, enemy_hp):
+        """
+        根据战斗条件自动使用技能
+        Args:
+            enemy_atk: 敌人攻击力
+            enemy_hp: 敌人当前血量
+        Returns:
+            int: 技能造成的总伤害
+        """
+        total_damage = 0
+        life_percent = self.player.life / self.player.max_life
+        
+        # 检查每个技能是否可用
+        for skill_name, skill_data in self.player.skills.items():
+            # 技能未学习或冷却中则跳过
+            if skill_data["level"] == 0 or skill_data["cooldown"] > 0:
+                continue
+                
+            if skill_name == "治疗术":
+                # 生命值低于40%时使用治疗术
+                if life_percent < 0.4:
+                    self.display.show_battle_info("自动技能", "自动使用治疗术！")
+                    # use_skill会处理冷却，这里直接调用
+                    self.use_skill(skill_name)
+                    
+            elif skill_name == "护盾":
+                # 敌人攻击力较高时使用护盾（攻击力大于玩家生命值的20%）
+                if enemy_atk > self.player.max_life * 0.2 and not self.player.shield_active:
+                    self.display.show_battle_info("自动技能", "自动使用护盾！")
+                    self.use_skill(skill_name)
+                    
+            elif skill_name == "火球术":
+                # 敌人血量较高时使用火球术（血量大于玩家攻击力的5倍）
+                if enemy_hp > self.player.attack * 5:
+                    self.display.show_battle_info("自动技能", "自动使用火球术！")
+                    damage = self.use_skill(skill_name)
+                    total_damage += damage
+                    
+            elif skill_name == "元素爆发":
+                # 元素伤害加成较低时使用（当前加成小于1.5倍）
+                if self.player.element_damage_bonus < 1.5:
+                    self.display.show_battle_info("自动技能", "自动使用元素爆发！")
+                    self.use_skill(skill_name)
+                    
+            elif skill_name == "时间减缓":
+                # 时间减缓触发条件：敌人攻击力较高或玩家生命值较低时使用
+                # 条件1：敌人攻击力大于玩家攻击力的1.5倍
+                # 条件2：玩家生命值低于70%
+                # 条件3：敌人攻击力大于玩家最大生命值的25%（危险情况）
+                condition1 = enemy_atk > self.player.attack * 1.5
+                condition2 = life_percent < 0.7
+                condition3 = enemy_atk > self.player.max_life * 0.25
+                
+                if condition1 or condition2 or condition3:
+                    self.display.show_battle_info("自动技能", "自动使用时间减缓！")
+                    self.use_skill(skill_name)
+        
+        return total_damage
 
     def check_achievements(self):
         """检查并触发成就"""
@@ -803,15 +1172,38 @@ class Game:
             self.complete_achievement("技能大师")
             newly_completed.append("技能大师")
 
+        # 检查技能专家：任意单个技能达到5级
+        if (
+            any(skill["level"] >= 5 for skill in self.player.skills.values())
+            and not self.achievements["技能专家"]["completed"]
+        ):
+            self.complete_achievement("技能专家")
+            newly_completed.append("技能专家")
+
+        # 检查技能宗师：所有技能达到5级
+        if (
+            all(skill["level"] >= 5 for skill in self.player.skills.values())
+            and not self.achievements["技能宗师"]["completed"]
+        ):
+            self.complete_achievement("技能宗师")
+            newly_completed.append("技能宗师")
+
+        # 检查技能收藏家：学习所有5个技能
+        if (
+            all(skill["level"] > 0 for skill in self.player.skills.values())
+            and not self.achievements["技能收藏家"]["completed"]
+        ):
+            self.complete_achievement("技能收藏家")
+            newly_completed.append("技能收藏家")
+
         # 显示新完成的成就
         if newly_completed:
             achievement_names = "、".join(newly_completed)
             from display_manager import get_display_manager
 
             display = get_display_manager()
-            display.show_info(f"🏆 成就解锁：{achievement_names}！")
             display.show_message(
-                "成就系统", f"🏆 成就解锁：\n{achievement_names}"
+                "成就系统", f"🏆 成就解锁：{achievement_names}！"
             )
 
     def complete_achievement(self, achievement_name):
@@ -821,10 +1213,17 @@ class Game:
             if not achievement["completed"]:
                 achievement["completed"] = True
                 self.player.coin += achievement["reward"]
-                print(
-                    f"成就完成：{achievement_name}，"
-                    f"奖励{achievement['reward']}金币！"
-                )
+                if self.display:
+                    self.display.show_message(
+                        "成就完成",
+                        f"成就完成：{achievement_name}，"
+                        f"奖励{achievement['reward']}金币！"
+                    )
+                else:
+                    print(
+                        f"成就完成：{achievement_name}，"
+                        f"奖励{achievement['reward']}金币！"
+                    )
 
     def show_achievements(self):
         """显示成就列表"""
@@ -927,10 +1326,8 @@ class Game:
             with open("savegame.dat", "w") as f:
                 for key, value in save_data.items():
                     f.write(f"{key}:{value}\n")
-            print("游戏已保存！")
             self.display.show_message("保存成功", "游戏已保存！")
         except Exception as e:
-            print(f"保存失败: {e}")
             self.display.show_message("错误", f"保存失败: {e}")
 
     def load_game(self):
@@ -992,7 +1389,10 @@ class Game:
 
             return True
         except Exception as e:
-            print(f"加载失败: {e}")
+            if self.display:
+                self.display.show_message("错误", f"加载失败: {e}")
+            else:
+                print(f"加载失败: {e}")
             return False
 
     def run(self):
@@ -1089,8 +1489,7 @@ class Game:
 
                 self.display = DisplayManager(mode="both")
 
-        print(f"JOJO Soul v{VERSION}")
-        print("作者：YricOTF (Refactored)")
+        self.display.show_message("JOJO Soul", f"JOJO Soul v{VERSION}\n作者：YricOTF (Refactored)")
         time.sleep(1)
 
         # 角色命名
@@ -1109,7 +1508,6 @@ class Game:
                 == "加载存档"
             ):
                 if self.load_game():
-                    print(f"欢迎回来, {self.player.name}!")
                     self.display.show_message(
                         "加载成功",
                         f"欢迎回来, {self.player.name}!\n等级: {self.player.level}",
