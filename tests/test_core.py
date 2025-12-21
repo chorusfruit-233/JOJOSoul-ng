@@ -1,6 +1,7 @@
 import sys
 import os
 import importlib.util
+from unittest.mock import patch
 
 # 检查是否在 CI 环境中
 IS_CI = os.environ.get("CI", "false").lower() == "true"
@@ -82,3 +83,42 @@ class TestCoreLogic:
         original_coin = game.player.coin
         game.check_stat_anomalies()
         assert game.player.coin > original_coin
+
+    @patch("random.randint")
+    def test_open_chest_crit_max_boundary(self, mock_randint):
+        """测试宝箱抽奖中crit_max减少到低于crit_min时的边界检查"""
+        game = Game()
+        game.player.coin = 100
+        game.player.crit_min = 5
+        game.player.crit_max = 6  # 当前上限比下限高1
+
+        # 模拟抽奖结果：outcome=3 (crit_max修改), val=-1 (减少1)
+        mock_randint.side_effect = [
+            3,
+            -1,
+        ]  # 第一个随机数是outcome，第二个是val
+        game.open_chest()
+
+        # 验证边界检查生效：crit_max减少到5，不低于crit_min
+        assert game.player.crit_max == 5
+        assert game.player.crit_min == 5
+        assert game.player.crit_min <= game.player.crit_max
+        assert game.player.coin == 30  # 100 - 70
+
+    @patch("random.randint")
+    def test_open_chest_crit_min_boundary(self, mock_randint):
+        """测试宝箱抽奖中crit_min增加到超过crit_max时的边界检查"""
+        game = Game()
+        game.player.coin = 100
+        game.player.crit_min = 5
+        game.player.crit_max = 5  # 当前上限等于下限
+
+        # 模拟抽奖结果：outcome=4 (crit_min修改), val=1 (增加1)
+        mock_randint.side_effect = [4, 1]  # 第一个随机数是outcome，第二个是val
+        game.open_chest()
+
+        # 验证边界检查生效：crit_min增加到6，crit_max同步提升到6
+        assert game.player.crit_min == 6
+        assert game.player.crit_max == 6  # 上限应同步提升
+        assert game.player.crit_min <= game.player.crit_max
+        assert game.player.coin == 30  # 100 - 70

@@ -78,7 +78,7 @@ class DisplayManager:
                 # GUI失败，继续使用终端
                 if self.mode == "gui":
                     print(f"GUI失败，切换到终端模式", file=sys.stderr)
-        
+
         # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(f"[{title}] {message}")
@@ -99,7 +99,7 @@ class DisplayManager:
                 # GUI失败，继续使用终端
                 if self.mode == "gui":
                     print(f"GUI失败，切换到终端模式", file=sys.stderr)
-        
+
         # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(info)
@@ -326,7 +326,7 @@ class DisplayManager:
                 # GUI失败，继续使用终端
                 if self.mode == "gui":
                     print(f"GUI失败，切换到终端模式", file=sys.stderr)
-        
+
         # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(info)
@@ -344,7 +344,7 @@ class DisplayManager:
                 # GUI失败，继续使用终端
                 if self.mode == "gui":
                     print(f"GUI失败，切换到终端模式", file=sys.stderr)
-        
+
         # 终端显示 - GUI不可用或失败时使用
         if self.use_terminal():
             print(f"\n=== {title} ===")

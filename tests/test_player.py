@@ -70,6 +70,7 @@ class TestPlayer:
 
         # 设置显示模式为终端，确保测试有输出
         from display_manager import set_display_mode, get_display_manager
+
         original_mode = get_display_manager().get_mode()
         try:
             set_display_mode("terminal")
@@ -191,6 +192,7 @@ class TestPlayer:
 
         # 设置显示模式为终端，确保测试有输出
         from display_manager import set_display_mode, get_display_manager
+
         original_mode = get_display_manager().get_mode()
         try:
             set_display_mode("terminal")
@@ -210,6 +212,7 @@ class TestPlayer:
 
         # 设置显示模式为终端，确保测试有输出
         from display_manager import set_display_mode, get_display_manager
+
         original_mode = get_display_manager().get_mode()
         try:
             set_display_mode("terminal")

@@ -1,6 +1,6 @@
 import sys
 import os
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 # 检查是否在 CI 环境中
 IS_CI = os.environ.get("CI", "false").lower() == "true"
@@ -82,11 +82,14 @@ class TestGame:
     def test_set_difficulty(self, mock_choicebox, mock_exit):
         """测试难度设置"""
         from unittest.mock import Mock
+
         game = Game()
         # 设置display属性为Mock对象
         game.display = Mock()
         # 让display.get_choice返回mock_choicebox.return_value
-        game.display.get_choice = lambda title, choices: mock_choicebox.return_value
+        game.display.get_choice = (
+            lambda title, choices: mock_choicebox.return_value
+        )
 
         # 测试无限金币版
         mock_choicebox.return_value = "无限金币版"
@@ -277,3 +280,57 @@ class TestGame:
         game.update_skill_cooldowns()
         game.update_skill_cooldowns()
         assert game.player.skills["火球术"]["cooldown"] == 0
+
+    @patch("easygui.choicebox")
+    def test_power_amulet_purchase_normal(self, mock_choicebox):
+        """测试正常购买力量护符"""
+        game = Game()
+        # 设置display为Mock对象
+        game.display = Mock()
+        # 让display.get_choice返回mock_choicebox.return_value
+        game.display.get_choice = (
+            lambda title, choices: mock_choicebox.return_value
+        )
+        game.display.show_message = Mock()  # 模拟show_message调用
+
+        game.player.coin = 200
+        game.player.level = 3  # 解锁力量护符
+        game.player.crit_min = 0
+        game.player.crit_max = 2
+
+        # 模拟选择力量护符
+        mock_choicebox.return_value = "力量护符 [150G, +3伤害下限倍率]"
+        game.shop()
+
+        # 验证属性更新正确
+        assert game.player.crit_min == 3
+        assert game.player.crit_max == 3  # 上限应同步提升
+        assert game.player.crit_min <= game.player.crit_max
+        assert game.player.coin == 50  # 200 - 150
+
+    @patch("easygui.choicebox")
+    def test_power_amulet_purchase_boundary(self, mock_choicebox):
+        """测试力量护符购买的边界情况（当新下限可能超过上限时）"""
+        game = Game()
+        # 设置display为Mock对象
+        game.display = Mock()
+        # 让display.get_choice返回mock_choicebox.return_value
+        game.display.get_choice = (
+            lambda title, choices: mock_choicebox.return_value
+        )
+        game.display.show_message = Mock()  # 模拟show_message调用
+
+        game.player.coin = 300
+        game.player.level = 3
+        game.player.crit_min = 4
+        game.player.crit_max = 5  # 当前上限只比下限高1
+
+        # 购买力量护符（+3下限），新下限=7，会超过当前上限5
+        mock_choicebox.return_value = "力量护符 [150G, +3伤害下限倍率]"
+        game.shop()
+
+        # 验证边界检查生效：上限应同步提升到7
+        assert game.player.crit_min == 7
+        assert game.player.crit_max == 7  # 上限应同步提升到新下限
+        assert game.player.crit_min <= game.player.crit_max
+        assert game.player.coin == 150  # 300 - 150
