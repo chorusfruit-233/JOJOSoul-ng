@@ -1,6 +1,6 @@
 [project]
 name = "JOJOSoul-ng"
-version = "2.2.0"
+version = "2.3.0"
 description = "基于 Python 的 JOJO 奇妙冒险同人游戏"
 authors = [
     {name = "YricOTF"}
