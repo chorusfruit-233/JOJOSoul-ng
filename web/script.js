@@ -29,8 +29,16 @@ async function loadGameCode() {
         const displayResponse = await fetch('../display_manager.py');
         const displayCode = await displayResponse.text();
 
-        // 执行代码
+        // 先执行显示管理器代码
         await pyodide.runPythonAsync(displayCode);
+
+        // 修改 display_manager，禁用 easygui
+        await pyodide.runPythonAsync(`
+import display_manager
+display_manager.DisplayManager.gui_available = False
+`);
+
+        // 执行游戏代码
         await pyodide.runPythonAsync(gameCode);
 
         console.log('游戏代码加载完成！');
@@ -111,13 +119,9 @@ def web_get_save_path():
     from pathlib import Path
     return Path('/web/savegame.dat')
 
-# 注入到全局
-import JOJOSoul_ng
-JOJOSoul_ng.get_save_path = web_get_save_path
-
-# 修改 display_manager，禁用 easygui
-import display_manager
-display_manager.DisplayManager.gui_available = False
+# 注入到全局命名空间
+import sys
+sys.modules['JOJOSoul_ng'] = type('Module', (), {'get_save_path': web_get_save_path})()
 
 # 创建 Web 显示管理器
 class WebDisplayManager:
@@ -206,7 +210,7 @@ async function main() {
     await pyodide.runPythonAsync(`
 import sys
 sys.argv = ['JOJOSoul-ng.py', '--terminal']
-game = JOJOSoul_ng.Game()
+game = Game()
 game.display = web_display
 game.player.display = web_display
 game.run()
