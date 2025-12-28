@@ -75,6 +75,15 @@ async function initWebDisplay() {
 import sys
 import os
 from pathlib import Path
+import builtins
+
+# 模拟 input 函数
+_original_input = builtins.input
+def web_input(prompt=""):
+    # 返回默认值
+    return "勇者"
+
+builtins.input = web_input
 
 # 获取存档路径（使用浏览器本地存储模拟）
 class WebStorage:
@@ -130,7 +139,6 @@ def web_open(path, mode='r'):
     return _original_open(path, mode)
 
 # 修改全局 open
-import builtins
 builtins.open = web_open
 
 # 修改 get_save_path 函数
