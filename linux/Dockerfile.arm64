@@ -1,0 +1,63 @@
+FROM --platform=linux/arm64 ubuntu:22.04
+
+# 设置环境变量
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# 安装依赖
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dev \
+    dpkg-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装 Python 依赖
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# 复制源代码
+COPY JOJOSoul-ng.py .
+COPY display_manager.py .
+COPY JOJOSoul.spec .
+
+# 修改 spec 文件以支持 ARM64
+RUN sed -i 's/Architecture: amd64/Architecture: arm64/g' JOJOSoul.spec
+
+# 构建应用
+RUN pyinstaller JOJOSoul.spec
+
+# 创建 .deb 包
+RUN mkdir -p josoul-deb/DEBIAN \
+    && mkdir -p josoul-deb/usr/local/bin \
+    && mkdir -p josoul-deb/usr/share/applications \
+    && mkdir -p josoul-deb/usr/share/icons/hicolor/256x256/apps
+
+RUN cp dist/josoul josoul-deb/usr/local/bin/ \
+    && chmod +x josoul-deb/usr/local/bin/josoul
+
+COPY linux/josoul.desktop josoul-deb/usr/share/applications/
+
+RUN if [ -f icons/josoul.png ]; then \
+        cp icons/josoul.png josoul-deb/usr/share/icons/hicolor/256x256/apps/; \
+    fi
+
+RUN cat > josoul-deb/DEBIAN/control << 'EOF'
+Package: josoul
+Version: 2.3.0
+Section: games
+Priority: optional
+Architecture: arm64
+Maintainer: YricOTF
+Description: JOJO Soul - A JOJO-themed adventure game
+ A JOJO-themed adventure game where you battle through
+ various locations to stop Pucci from restarting the world.
+EOF
+
+RUN dpkg-deb --build josoul-deb josoul_2.3.0_arm64.deb

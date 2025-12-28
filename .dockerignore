@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+*.spec
+
+# Virtual Environment
+venv
+ENV
+env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Documentation
+*.md
+!README.md
+LICENSE
+
+# Test
+tests
+*.test.py
+
+# Logs
+*.log
+
+# Build artifacts
+*.deb
+*.rpm
+*.exe
+*.app
+*.apk
+*.ipa
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Mobile
+mobile/
+web/
