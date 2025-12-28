@@ -7,7 +7,7 @@ from pathlib import Path
 block_cipher = None
 
 # 获取项目根目录
-ROOT_DIR = Path(__file__).parent
+ROOT_DIR = Path(os.getcwd())
 
 # 平台特定的配置
 if sys.platform == "win32":
