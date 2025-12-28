@@ -87,15 +87,12 @@ main {
     border-radius: var(--border-radius);
     padding: var(--spacing);
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
 }
 
 /* 游戏输出区域 */
 #game-output {
     flex: 1;
     overflow-y: auto;
-    margin-bottom: var(--spacing);
     padding: var(--spacing);
     background-color: var(--background-color);
     border-radius: var(--border-radius);
@@ -133,14 +130,87 @@ main {
     padding-left: var(--spacing);
 }
 
-/* 游戏输入区域 */
-#game-input {
+/* 模态对话框 */
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
     display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+#modal {
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing);
+    min-width: 400px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing);
+    padding-bottom: var(--spacing);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.modal-header h2 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.modal-body {
+    margin-bottom: var(--spacing);
+}
+
+.modal-body p {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    margin-bottom: var(--spacing);
+}
+
+#modal-choices {
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing);
 }
 
-#user-input {
-    flex: 1;
+.choice-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: var(--spacing);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    text-align: left;
+}
+
+.choice-button:hover {
+    background-color: #ff5252;
+}
+
+.choice-button:active {
+    transform: scale(0.98);
+}
+
+#modal-input-group {
+    margin-top: var(--spacing);
+}
+
+#modal-input {
+    width: 100%;
     padding: var(--spacing);
     border: 2px solid var(--primary-color);
     border-radius: var(--border-radius);
@@ -149,29 +219,17 @@ main {
     font-size: 1rem;
 }
 
-#user-input:focus {
+#modal-input:focus {
     outline: none;
     border-color: var(--secondary-color);
 }
 
-#submit-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: var(--spacing) 2 * var(--spacing);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-#submit-btn:hover {
-    background-color: #ff5252;
-}
-
-#submit-btn:disabled {
-    background-color: var(--text-secondary);
-    cursor: not-allowed;
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing);
+    padding-top: var(--spacing);
+    border-top: 2px solid var(--surface-color);
 }
 
 footer {
