@@ -22,15 +22,30 @@
             <div id="game-output">
                 <!-- 游戏输出内容 -->
             </div>
-            <div id="game-input">
-                <input type="text" id="user-input" placeholder="输入你的选择..." />
-                <button id="submit-btn">确认</button>
-            </div>
         </main>
 
         <footer>
             <p>JOJO Soul - 基于 Pyodide 的 Web 版本</p>
         </footer>
+    </div>
+
+    <!-- 模态对话框 -->
+    <div id="modal-overlay" style="display: none;">
+        <div id="modal">
+            <div class="modal-header">
+                <h2 id="modal-title">标题</h2>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message">消息内容</p>
+                <div id="modal-choices"></div>
+                <div id="modal-input-group" style="display: none;">
+                    <input type="text" id="modal-input" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel" class="button secondary">取消</button>
+            </div>
+        </div>
     </div>
 
     <!-- Pyodide 加载脚本 -->
