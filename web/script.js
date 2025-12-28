@@ -31,9 +31,19 @@ import builtins
 # 设置命令行参数
 sys.argv = ['JOJOSoul-ng.py', '--terminal']
 
-# 模拟 input 函数
+# 模拟 input 函数，返回默认值让游戏继续运行
 def web_input(prompt=""):
-    return "勇者"
+    # 检查提示内容，返回合适的默认值
+    if '是否开始游戏' in str(prompt):
+        return "y"  # 开始游戏
+    elif '请选择' in str(prompt):
+        return "1"  # 选择第一个选项
+    elif '请输入选择' in str(prompt):
+        return "1"  # 选择第一个选项
+    elif '请选择 (1=是' in str(prompt):
+        return "1"  # 选择是
+    else:
+        return "勇者"  # 默认角色名
 
 builtins.input = web_input
 `);
