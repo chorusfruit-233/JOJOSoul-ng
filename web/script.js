@@ -2,6 +2,8 @@
 
 let pyodide = null;
 let game = null;
+let inputCallback = null;
+let inputPrompt = '';
 
 // 初始化 Pyodide
 async function initPyodide() {
@@ -31,19 +33,13 @@ import builtins
 # 设置命令行参数
 sys.argv = ['JOJOSoul-ng.py', '--terminal']
 
-# 模拟 input 函数，返回默认值让游戏继续运行
+# 模拟 input 函数
 def web_input(prompt=""):
-    # 检查提示内容，返回合适的默认值
-    if '是否开始游戏' in str(prompt):
-        return "y"  # 开始游戏
-    elif '请选择' in str(prompt):
-        return "1"  # 选择第一个选项
-    elif '请输入选择' in str(prompt):
-        return "1"  # 选择第一个选项
-    elif '请选择 (1=是' in str(prompt):
-        return "1"  # 选择是
-    else:
-        return "勇者"  # 默认角色名
+    # 将输入请求传递给 JavaScript
+    import js
+    js.request_input(prompt)
+    # 等待用户输入
+    return js.wait_for_input()
 
 builtins.input = web_input
 `);
@@ -98,13 +94,14 @@ import os
 from pathlib import Path
 import builtins
 
-# 模拟 input 函数
-_original_input = builtins.input
-def web_input(prompt=""):
-    # 返回默认值
-    return "勇者"
+# 模拟 print 函数
+_original_print = print
+def web_print(*args, **kwargs):
+    import js
+    text = ' '.join(str(arg) for arg in args)
+    js.append_output(text)
 
-builtins.input = web_input
+print = web_print
 
 # 获取存档路径（使用浏览器本地存储模拟）
 class WebStorage:
@@ -184,45 +181,55 @@ class WebDisplayManager:
     
     def show_message(self, title, message):
         """显示消息"""
-        self.messages.append({'type': 'message', 'title': title, 'content': message})
-        self._sync_to_js()
+        import js
+        js.append_output(f"[{title}] {message}")
     
     def show_info(self, info):
         """显示信息"""
-        self.messages.append({'type': 'info', 'content': info})
-        self._sync_to_js()
+        import js
+        js.append_output(info)
     
     def get_choice(self, title, choices):
         """获取用户选择"""
-        self.messages.append({'type': 'choice', 'title': title, 'choices': choices})
-        self._sync_to_js()
-        # 简化版本：返回第一个选项
-        return choices[0] if choices else None
+        import js
+        js.append_output(f"{title}")
+        for i, choice in enumerate(choices):
+            js.append_output(f"{i+1}. {choice}")
+        js.append_output("0. 取消")
+        # 等待用户输入
+        result = js.wait_for_input()
+        try:
+            choice_index = int(result) - 1
+            if 0 <= choice_index < len(choices):
+                return choices[choice_index]
+        except:
+            pass
+        return None
     
     def get_yes_no(self, title, message):
         """获取是/否选择"""
-        self.messages.append({'type': 'yesno', 'title': title, 'message': message})
-        self._sync_to_js()
-        return True  # 简化版本
+        import js
+        js.append_output(f"{title}")
+        js.append_output(f"{message}")
+        js.append_output("1=是, 2=否")
+        # 等待用户输入
+        result = js.wait_for_input()
+        return result in ['1', 'y', 'yes', '是']
     
     def get_input(self, title, prompt):
         """获取文本输入"""
-        self.messages.append({'type': 'input', 'title': title, 'prompt': prompt})
-        self._sync_to_js()
-        return "勇者"  # 简化版本
+        import js
+        result = js.wait_for_input()
+        return result if result else None
     
     def show_battle_info(self, title, message):
         """显示战斗信息"""
-        self.messages.append({'type': 'battle', 'title': title, 'content': message})
-        self._sync_to_js()
+        import js
+        js.append_output(f"[{title}] {message}")
     
     def _sync_to_js(self):
         """同步消息到 JavaScript"""
-        import json
-        messages_json = json.dumps(self.messages)
-        # 这里需要实现与 JavaScript 的通信
-        # 简化版本：打印到控制台
-        print(f"WebDisplay: {messages_json}")
+        pass
 
 # 创建全局 Web 显示管理器实例
 web_display = WebDisplayManager()
@@ -239,8 +246,71 @@ function showError(message) {
     `;
 }
 
+// 添加输出到游戏界面
+function appendOutput(text, className = '') {
+    const outputDiv = document.getElementById('game-output');
+    const p = document.createElement('p');
+    p.textContent = text;
+    if (className) {
+        p.className = className;
+    }
+    outputDiv.appendChild(p);
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+}
+
+// 请求用户输入
+function requestInput(prompt) {
+    inputPrompt = prompt;
+    const inputField = document.getElementById('user-input');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    // 显示提示
+    appendOutput(prompt, 'input-prompt');
+    
+    // 启用输入框
+    inputField.disabled = false;
+    submitBtn.disabled = false;
+    inputField.value = '';
+    inputField.focus();
+}
+
+// 等待用户输入（从 Python 调用）
+function waitForInput() {
+    return new Promise((resolve) => {
+        inputCallback = resolve;
+    });
+}
+
+// 提交用户输入
+function submitInput() {
+    const inputField = document.getElementById('user-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const value = inputField.value.trim();
+    
+    // 禁用输入框
+    inputField.disabled = true;
+    submitBtn.disabled = true;
+    
+    // 显示用户输入
+    appendOutput(value, 'choice');
+    
+    // 调用回调
+    if (inputCallback) {
+        inputCallback(value);
+        inputCallback = null;
+    }
+}
+
 // 主初始化函数
 async function main() {
+    // 设置输入事件监听器
+    document.getElementById('submit-btn').addEventListener('click', submitInput);
+    document.getElementById('user-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            submitInput();
+        }
+    });
+
     // 加载 Pyodide
     const pyodideLoaded = await initPyodide();
     if (!pyodideLoaded) return;
@@ -259,8 +329,6 @@ async function main() {
     // 启动游戏
     console.log('启动游戏...');
     await pyodide.runPythonAsync(`
-import sys
-# sys.argv 已经在加载代码时设置为 ['JOJOSoul-ng.py', '--terminal']
 game = Game()
 game.display = web_display
 game.player.display = web_display
