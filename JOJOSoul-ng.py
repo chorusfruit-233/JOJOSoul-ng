@@ -1707,29 +1707,34 @@ class Game:
         if outcome == 1:
             val = random.randint(-20, 30)
             self.player.max_life += val
-            self.display.show_info(f"抽奖结果：生命上限变化 {val}")
-            self.display.show_message("宝箱抽奖", f"抽奖结果：生命上限变化 {val}")
+            if self.display:
+                self.display.show_info(f"抽奖结果：生命上限变化 {val}")
+                self.display.show_message("宝箱抽奖", f"抽奖结果：生命上限变化 {val}")
         elif outcome == 2:
             val = random.randint(-5, 10)
             self.player.attack += val
-            self.display.show_info(f"抽奖结果：伤害变化 {val}")
+            if self.display:
+                self.display.show_info(f"抽奖结果：伤害变化 {val}")
         elif outcome == 3:
             val = random.randint(-1, 1)
             self.player.crit_max += val
             # 确保crit_max不小于crit_min
             if self.player.crit_max < self.player.crit_min:
                 self.player.crit_max = self.player.crit_min
-            self.display.show_info(f"抽奖结果：伤害上限倍率变化 {val}")
+            if self.display:
+                self.display.show_info(f"抽奖结果：伤害上限倍率变化 {val}")
         elif outcome == 4:
             val = random.randint(0, 1)
             self.player.crit_min += val
             # 确保crit_min不超过crit_max
             if self.player.crit_min > self.player.crit_max:
                 self.player.crit_max = self.player.crit_min
-            self.display.show_info(f"抽奖结果：伤害下限倍率变化 {val}")
+            if self.display:
+                self.display.show_info(f"抽奖结果：伤害下限倍率变化 {val}")
         elif outcome == 5:
             self.player.oxygen += 1
-            self.display.show_info("获得了氧气 x1")
+            if self.display:
+                self.display.show_info("获得了氧气 x1")
 
         time.sleep(1)
 
