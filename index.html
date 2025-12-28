@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOJO Soul - Web 版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>正在加载游戏...</p>
+    </div>
+
+    <div id="game-container" style="display: none;">
+        <header>
+            <h1>JOJO Soul</h1>
+            <span class="version">v2.3.0</span>
+        </header>
+
+        <main id="game-main">
+            <!-- 游戏内容将在这里动态显示 -->
+        </main>
+
+        <footer>
+            <p>JOJO Soul - 基于 Pyodide 的 Web 版本</p>
+        </footer>
+    </div>
+
+    <!-- Pyodide 加载脚本 -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
