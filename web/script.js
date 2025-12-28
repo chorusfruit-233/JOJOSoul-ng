@@ -9,16 +9,6 @@ async function initPyodide() {
         console.log('正在加载 Pyodide...');
         pyodide = await loadPyodide();
 
-        // 安装依赖
-        console.log('正在安装依赖...');
-        await pyodide.installPackage('micropip');
-
-        // 加载 micropip
-        await pyodide.runPythonAsync(`
-            import micropip
-            await micropip.install('easygui==0.98.3')
-        `);
-
         console.log('Pyodide 加载完成！');
         return true;
     } catch (error) {
@@ -56,13 +46,84 @@ async function loadGameCode() {
 async function initWebDisplay() {
     await pyodide.runPythonAsync(`
 import sys
-from display_manager import DisplayManager
+import os
+from pathlib import Path
 
-class WebDisplayManager(DisplayManager):
+# 获取存档路径（使用浏览器本地存储模拟）
+class WebStorage:
+    """Web 端存储模拟"""
+    
+    def __init__(self):
+        self.data = {}
+    
+    def read(self, path):
+        return self.data.get(str(path), None)
+    
+    def write(self, path, content):
+        self.data[str(path)] = content
+        return True
+    
+    def exists(self, path):
+        return str(path) in self.data
+
+# 创建 Web 存储实例
+web_storage = WebStorage()
+
+# 模拟 os.path.exists
+_original_exists = os.path.exists
+def web_exists(path):
+    if 'savegame' in str(path):
+        return web_storage.exists(path)
+    return _original_exists(path)
+
+os.path.exists = web_exists
+
+# 模拟 open 函数
+_original_open = open
+class WebFile:
+    def __init__(self, path, mode='r'):
+        self.path = path
+        self.mode = mode
+        self.content = web_storage.read(path) or ''
+        self.pos = 0
+    
+    def read(self):
+        return self.content
+    
+    def write(self, content):
+        self.content += content
+    
+    def close(self):
+        if 'w' in self.mode:
+            web_storage.write(self.path, self.content)
+
+def web_open(path, mode='r'):
+    if 'savegame' in str(path):
+        return WebFile(path, mode)
+    return _original_open(path, mode)
+
+# 修改全局 open
+import builtins
+builtins.open = web_open
+
+# 修改 get_save_path 函数
+def web_get_save_path():
+    from pathlib import Path
+    return Path('/web/savegame.dat')
+
+# 注入到全局
+import JOJOSoul_ng
+JOJOSoul_ng.get_save_path = web_get_save_path
+
+# 修改 display_manager，禁用 easygui
+import display_manager
+display_manager.DisplayManager.gui_available = False
+
+# 创建 Web 显示管理器
+class WebDisplayManager:
     """Web 端显示管理器"""
     
     def __init__(self):
-        super().__init__(mode="terminal")
         self.gui_available = False
         self.messages = []
     
@@ -80,7 +141,6 @@ class WebDisplayManager(DisplayManager):
         """获取用户选择"""
         self.messages.append({'type': 'choice', 'title': title, 'choices': choices})
         self._sync_to_js()
-        # 等待用户选择（这里需要实现异步等待）
         # 简化版本：返回第一个选项
         return choices[0] if choices else None
     
@@ -146,7 +206,9 @@ async function main() {
     await pyodide.runPythonAsync(`
 import sys
 sys.argv = ['JOJOSoul-ng.py', '--terminal']
-game = Game()
+game = JOJOSoul_ng.Game()
+game.display = web_display
+game.player.display = web_display
 game.run()
     `);
 }
