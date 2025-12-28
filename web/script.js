@@ -29,23 +29,36 @@ async function loadGameCode() {
         const displayResponse = await fetch('../display_manager.py');
         const displayCode = await displayResponse.text();
 
-        // 先执行显示管理器代码
+        // 执行显示管理器代码到全局命名空间
         await pyodide.runPythonAsync(displayCode);
 
-        // 修改 display_manager，禁用 easygui
+        // 手动注册 display_manager 模块到 sys.modules
+        await pyodide.runPythonAsync(`
+import sys
+# 将全局命名空间中的 display_manager 注册为模块
+sys.modules['display_manager'] = type('Module', (), {
+    'DisplayManager': DisplayManager,
+    'display_manager': display_manager,
+    'get_display_manager': get_display_manager,
+    'set_display_mode': set_display_mode,
+    'get_display_mode': get_display_mode,
+})()
+`);
+
+        // 禁用 display_manager 的 GUI 功能
         await pyodide.runPythonAsync(`
 import display_manager
 display_manager.DisplayManager.gui_available = False
 `);
 
-        // 执行游戏代码
+        // 执行游戏代码到全局命名空间
         await pyodide.runPythonAsync(gameCode);
 
         console.log('游戏代码加载完成！');
         return true;
     } catch (error) {
         console.error('游戏代码加载失败:', error);
-        showError('游戏代码加载失败，请刷新页面重试。');
+        showError('游戏代码加载失败: ' + error.message);
         return false;
     }
 }
@@ -119,9 +132,12 @@ def web_get_save_path():
     from pathlib import Path
     return Path('/web/savegame.dat')
 
-# 注入到全局命名空间
-import sys
-sys.modules['JOJOSoul_ng'] = type('Module', (), {'get_save_path': web_get_save_path})()
+# 直接替换全局命名空间中的 get_save_path 函数
+import JOJOSoul_ng
+JOJOSoul_ng.get_save_path = web_get_save_path
+
+# 禁用 display_manager 的 GUI 功能
+display_manager.DisplayManager.gui_available = False
 
 # 创建 Web 显示管理器
 class WebDisplayManager:
