@@ -20,6 +20,10 @@ class DisplayManager:
         self.gui_available = False
         self.easygui = None
 
+        # 终端模式下完全不尝试导入easygui，避免触发GUI相关操作
+        if mode == "terminal":
+            return
+
         # 只有在需要GUI时才尝试导入easygui
         if mode in ["gui", "both"]:
             try:

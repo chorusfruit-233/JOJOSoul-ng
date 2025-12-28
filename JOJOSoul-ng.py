@@ -2,13 +2,41 @@ import time
 import sys
 import random
 import os
+import platform
+from pathlib import Path
 
 # 游戏版本
 VERSION = "2.3.0"
 
 
+def get_save_path() -> Path:
+    """
+    获取跨平台的存档文件路径
+
+    Returns:
+        Path: 存档文件的完整路径
+    """
+    system = platform.system()
+
+    if system == "Windows":
+        # Windows: %APPDATA%\JOJOSoul\savegame.dat
+        appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+        save_dir = Path(appdata) / "JOJOSoul"
+    elif system == "Darwin":
+        # macOS: ~/Library/Application Support/JOJOSoul/savegame.dat
+        save_dir = Path.home() / "Library" / "Application Support" / "JOJOSoul"
+    else:
+        # Linux/Unix: ~/.josoul/savegame.dat
+        save_dir = Path.home() / ".josoul"
+
+    # 确保目录存在
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    return save_dir / "savegame.dat"
+
+
 class Player:
-    def __init__(self, name="勇者"):
+    def __init__(self, name="勇者", display=None):
         self.name = name
         self.life = 100.0
         self.max_life = 100.0
@@ -37,6 +65,8 @@ class Player:
         # 技能状态
         self.shield_active = False  # 护盾状态
         self.time_slow_active = False  # 时间减缓状态
+        # 显示管理器
+        self.display = display
 
     def is_alive(self):
         return self.life > 0
@@ -62,11 +92,15 @@ class Player:
                 f"\n临时元素增强: {self.temporary_element_boost:.2f}x "
                 f"(剩余{self.temporary_boost_turns}回合)"
             )
-        # 使用DisplayManager同时显示终端和GUI
-        from display_manager import get_display_manager
+        # 使用 self.display 显示信息
+        if self.display:
+            self.display.show_message("角色信息", info)
+        else:
+            # 如果没有display，使用全局display_manager作为回退
+            from display_manager import get_display_manager
 
-        display = get_display_manager()
-        display.show_message("角色信息", info)
+            display = get_display_manager()
+            display.show_message("角色信息", info)
 
     def gain_exp(self, amount):
         """获得经验值并升级"""
@@ -87,25 +121,22 @@ class Player:
         self.skill_points += 1  # 每次升级获得1个技能点
 
         # 升级信息
-        try:
-            from display_manager import get_display_manager
-
-            display = get_display_manager()
-            display.show_message(
+        if self.display:
+            self.display.show_message(
                 "升级",
                 f"🎉 恭喜升级到 {self.level} 级！\n"
                 f"生命上限 +10，攻击力 +2，技能点 +1",
             )
             time.sleep(1)
-        except Exception:
-            # 如果display_manager不可用，使用简单的print（终端模式）
+        else:
+            # 如果display不可用，使用简单的print（终端模式）
             print("生命上限 +10，攻击力 +2，技能点 +1")
             time.sleep(1)
 
 
 class Game:
     def __init__(self):
-        self.player = Player()
+        self.player = Player(display=None)  # 先创建Player，display稍后设置
         self.display = None  # 延迟初始化，在run方法中根据用户选择创建
         self.lmode = 1.0  # 血量倍率
         self.amode = 1.0  # 攻击倍率
@@ -494,22 +525,16 @@ class Game:
                     and not self.achievements["雪山征服者"]["completed"]
                 ):
                     self.complete_achievement("雪山征服者")
-                    from display_manager import get_display_manager
-
-                    display = get_display_manager()
-                    display.show_message(
+                    self.display.show_message(
                         "成就解锁", "🏆 成就解锁：雪山征服者！"
                     )
                 elif (
                     name == "暗影刺客"
                     and not self.achievements["暗影克星"]["completed"]
                 ):
-                    from display_manager import get_display_manager
-
-                    display = get_display_manager()
-                    display.show_message("成就解锁", "🏆 成就解锁：暗影克星！")
+                    self.display.show_message("成就解锁", "🏆 成就解锁：暗影克星！")
                     self.complete_achievement("暗影克星")
-                    display.show_message(
+                    self.display.show_message(
                         "成就解锁", "🏆 成就解锁：风暴掌控者！"
                     )
                 elif name in ["石像守卫", "古代法师", "神殿骑士"]:
@@ -526,10 +551,7 @@ class Game:
                         and not self.achievements["神殿英雄"]["completed"]
                     ):
                         self.complete_achievement("神殿英雄")
-                        from display_manager import get_display_manager
-
-                        display = get_display_manager()
-                        display.show_message(
+                        self.display.show_message(
                             "成就解锁", "🏆 成就解锁：神殿英雄！"
                         )
 
@@ -1230,10 +1252,7 @@ class Game:
         if action == "学习技能" or action == "升级技能":
             # 检查技能是否已达到最大等级
             if skill["level"] >= 10:
-                from display_manager import get_display_manager
-
-                display = get_display_manager()
-                display.show_message(
+                self.display.show_message(
                     "错误", "技能已达到最大等级（10级），无法继续升级！"
                 )
                 return
@@ -1241,22 +1260,16 @@ class Game:
             if self.player.skill_points >= 1:
                 self.player.skill_points -= 1
                 skill["level"] += 1
-                from display_manager import get_display_manager
-
-                display = get_display_manager()
-                display.show_message(
+                self.display.show_message(
                     "技能升级", f"{skill_name}升级到Lv.{skill['level']}！"
                 )
 
                 # 检查技能新手成就
                 if not self.achievements["技能新手"]["completed"]:
                     self.complete_achievement("技能新手")
-                    display.show_message("成就解锁", "🏆 成就解锁：技能新手！")
+                    self.display.show_message("成就解锁", "🏆 成就解锁：技能新手！")
             else:
-                from display_manager import get_display_manager
-
-                display = get_display_manager()
-                display.show_message("错误", "技能点不足！")
+                self.display.show_message("错误", "技能点不足！")
         elif action == "使用技能":
             if skill["cooldown"] > 0:
                 self.display.show_message("错误", "技能还在冷却中！")
@@ -1642,10 +1655,7 @@ class Game:
         # 显示新完成的成就
         if newly_completed:
             achievement_names = "、".join(newly_completed)
-            from display_manager import get_display_manager
-
-            display = get_display_manager()
-            display.show_message(
+            self.display.show_message(
                 "成就系统", f"🏆 成就解锁：{achievement_names}！"
             )
 
@@ -1656,6 +1666,7 @@ class Game:
             if not achievement["completed"]:
                 achievement["completed"] = True
                 self.player.coin += achievement["reward"]
+                # 使用 self.display 显示成就完成信息
                 if self.display:
                     self.display.show_message(
                         "成就完成",
@@ -1696,44 +1707,29 @@ class Game:
         if outcome == 1:
             val = random.randint(-20, 30)
             self.player.max_life += val
-            from display_manager import get_display_manager
-
-            display = get_display_manager()
-            display.show_info(f"抽奖结果：生命上限变化 {val}")
-            display.show_message("宝箱抽奖", f"抽奖结果：生命上限变化 {val}")
+            self.display.show_info(f"抽奖结果：生命上限变化 {val}")
+            self.display.show_message("宝箱抽奖", f"抽奖结果：生命上限变化 {val}")
         elif outcome == 2:
             val = random.randint(-5, 10)
             self.player.attack += val
-            from display_manager import get_display_manager
-
-            display = get_display_manager()
-            display.show_info(f"抽奖结果：伤害变化 {val}")
+            self.display.show_info(f"抽奖结果：伤害变化 {val}")
         elif outcome == 3:
             val = random.randint(-1, 1)
             self.player.crit_max += val
             # 确保crit_max不小于crit_min
             if self.player.crit_max < self.player.crit_min:
                 self.player.crit_max = self.player.crit_min
-            from display_manager import get_display_manager
-
-            display = get_display_manager()
-            display.show_info(f"抽奖结果：伤害上限倍率变化 {val}")
+            self.display.show_info(f"抽奖结果：伤害上限倍率变化 {val}")
         elif outcome == 4:
             val = random.randint(0, 1)
             self.player.crit_min += val
             # 确保crit_min不超过crit_max
             if self.player.crit_min > self.player.crit_max:
                 self.player.crit_max = self.player.crit_min
-            from display_manager import get_display_manager
-
-            display = get_display_manager()
-            display.show_info(f"抽奖结果：伤害下限倍率变化 {val}")
+            self.display.show_info(f"抽奖结果：伤害下限倍率变化 {val}")
         elif outcome == 5:
             self.player.oxygen += 1
-            from display_manager import get_display_manager
-
-            display = get_display_manager()
-            display.show_info("获得了氧气 x1")
+            self.display.show_info("获得了氧气 x1")
 
         time.sleep(1)
 
@@ -1772,7 +1768,8 @@ class Game:
             ]
 
         try:
-            with open("savegame.dat", "w") as f:
+            save_file = get_save_path()
+            with open(save_file, "w") as f:
                 for key, value in save_data.items():
                     f.write(f"{key}:{value}\n")
             self.display.show_message("保存成功", "游戏已保存！")
@@ -1782,11 +1779,12 @@ class Game:
     def load_game(self):
         """加载游戏"""
         try:
-            if not os.path.exists("savegame.dat"):
+            save_file = get_save_path()
+            if not save_file.exists():
                 return False
 
             save_data = {}
-            with open("savegame.dat", "r") as f:
+            with open(save_file, "r") as f:
                 for line in f:
                     if ":" in line:
                         key, value = line.strip().split(":", 1)
@@ -1847,78 +1845,93 @@ class Game:
     def run(self):
         # 显示模式选择（仅在启动时显示一次）
         if not hasattr(self, "_mode_selected"):
-            # 优先尝试GUI模式，如果GUI不可用才回退到终端模式选择
-            # 先尝试GUI模式
-            try:
-                import easygui
+            # 检查命令行参数
+            selected_mode = None
+            import sys
 
-                mode_choices = [
-                    "GUI模式 (图形界面)",
-                    "终端模式 (命令行界面)",
-                    "混合模式 (优先GUI，失败时使用终端)",
-                ]
+            if "--terminal" in sys.argv or "-t" in sys.argv:
+                selected_mode = "terminal"
+            elif "--gui" in sys.argv or "-g" in sys.argv:
+                selected_mode = "gui"
+            elif "--both" in sys.argv or "-b" in sys.argv:
+                selected_mode = "both"
 
-                selection = easygui.choicebox(
-                    "JOJO Soul - 显示模式选择\n\n请选择您偏好的显示模式：",
-                    "选择显示模式",
-                    choices=mode_choices,
-                )
+            # 如果没有命令行参数，显示模式选择界面
+            if selected_mode is None:
+                # 优先尝试GUI模式，如果GUI不可用才回退到终端模式选择
+                # 先尝试GUI模式
+                try:
+                    import easygui
 
-                if selection == "GUI模式 (图形界面)":
-                    selected_mode = "gui"
-                elif selection == "终端模式 (命令行界面)":
-                    selected_mode = "terminal"
-                elif selection == "混合模式 (优先GUI，失败时使用终端)":
-                    selected_mode = "both"
-                else:
-                    selected_mode = "both"  # 默认混合模式
-            except Exception:
-                # GUI不可用，使用终端模式选择
-                mode_choices = [
-                    "GUI模式 (图形界面)",
-                    "终端模式 (命令行界面)",
-                    "混合模式 (优先GUI，失败时使用终端)",
-                ]
+                    mode_choices = [
+                        "GUI模式 (图形界面)",
+                        "终端模式 (命令行界面)",
+                        "混合模式 (优先GUI，失败时使用终端)",
+                    ]
 
-                print("=== JOJO Soul - 显示模式选择 ===")
-                print("请选择您偏好的显示模式：")
-                for i, choice in enumerate(mode_choices):
-                    print(f"{i + 1}. {choice}")
+                    selection = easygui.choicebox(
+                        "JOJO Soul - 显示模式选择\n\n请选择您偏好的显示模式：",
+                        "选择显示模式",
+                        choices=mode_choices,
+                    )
 
-                selected_mode = "both"  # 默认值
-                while True:
-                    try:
-                        selection = input(
-                            "请输入选择 (1-3，默认为3): "
-                        ).strip()
-                        if not selection:
-                            selection = "3"
-
-                        if selection == "1":
-                            selected_mode = "gui"
-                            print("已选择：GUI模式")
-                            break
-                        elif selection == "2":
-                            selected_mode = "terminal"
-                            print("已选择：终端模式")
-                            break
-                        elif selection == "3":
-                            selected_mode = "both"
-                            print("已选择：混合模式")
-                            break
-                        else:
-                            print("无效选择，请输入1-3")
-                    except KeyboardInterrupt:
-                        print("\n使用默认混合模式")
+                    if selection == "GUI模式 (图形界面)":
+                        selected_mode = "gui"
+                    elif selection == "终端模式 (命令行界面)":
+                        selected_mode = "terminal"
+                    elif selection == "混合模式 (优先GUI，失败时使用终端)":
                         selected_mode = "both"
-                        break
-                    except ValueError:
-                        print("请输入有效数字")
+                    else:
+                        selected_mode = "both"  # 默认混合模式
+                except Exception:
+                    # GUI不可用，使用终端模式选择
+                    mode_choices = [
+                        "GUI模式 (图形界面)",
+                        "终端模式 (命令行界面)",
+                        "混合模式 (优先GUI，失败时使用终端)",
+                    ]
+
+                    print("=== JOJO Soul - 显示模式选择 ===")
+                    print("请选择您偏好的显示模式：")
+                    for i, choice in enumerate(mode_choices):
+                        print(f"{i + 1}. {choice}")
+
+                    selected_mode = "both"  # 默认值
+                    while True:
+                        try:
+                            selection = input(
+                                "请输入选择 (1-3，默认为3): "
+                            ).strip()
+                            if not selection:
+                                selection = "3"
+
+                            if selection == "1":
+                                selected_mode = "gui"
+                                print("已选择：GUI模式")
+                                break
+                            elif selection == "2":
+                                selected_mode = "terminal"
+                                print("已选择：终端模式")
+                                break
+                            elif selection == "3":
+                                selected_mode = "both"
+                                print("已选择：混合模式")
+                                break
+                            else:
+                                print("无效选择，请输入1-3")
+                        except KeyboardInterrupt:
+                            print("\n使用默认混合模式")
+                            selected_mode = "both"
+                            break
+                        except ValueError:
+                            print("请输入有效数字")
 
             # 现在根据用户选择创建DisplayManager
             from display_manager import DisplayManager
 
             self.display = DisplayManager(mode=selected_mode)
+            # 将 display 设置到 player 对象上
+            self.player.display = self.display
 
             # 显示当前模式信息
             if self.display.use_gui():
@@ -1953,7 +1966,8 @@ class Game:
             self.display.show_message("欢迎", f"欢迎, {self.player.name}!")
 
         # 检查是否有存档
-        if os.path.exists("savegame.dat"):
+        save_file = get_save_path()
+        if save_file.exists():
             if (
                 self.display.get_choice("加载游戏", ["加载存档", "新游戏"])
                 == "加载存档"
@@ -1966,7 +1980,7 @@ class Game:
                 else:
                     self.display.show_message("错误", "加载失败，开始新游戏")
             else:
-                os.remove("savegame.dat")  # 删除旧存档
+                save_file.unlink()  # 删除旧存档
 
         if not self.display.get_yes_no("开始游戏", "是否开始游戏？"):
             sys.exit()

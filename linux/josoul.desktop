@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=JOJO Soul
+Name[zh_CN]=JOJO 奇妙冒险
+Comment=A JOJO-themed adventure game
+Comment[zh_CN]=JOJO 主题冒险游戏
+Exec=josoul
+Icon=josoul
+Terminal=false
+Categories=Game;RolePlaying;
+Keywords=game;rpg;adventure;jojo;
+StartupNotify=true
+StartupWMClass=JOJOSoul

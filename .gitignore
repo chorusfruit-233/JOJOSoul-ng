@@ -25,6 +25,7 @@ MANIFEST
 # PyInstaller
 *.manifest
 *.spec
+!JOJOSoul.spec  # 保留项目的主 spec 文件
 
 # Installer logs
 pip-log.txt
