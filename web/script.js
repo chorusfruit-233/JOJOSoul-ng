@@ -29,6 +29,12 @@ async function loadGameCode() {
         const displayResponse = await fetch('../display_manager.py');
         const displayCode = await displayResponse.text();
 
+        // 先设置命令行参数，确保游戏直接进入终端模式
+        await pyodide.runPythonAsync(`
+import sys
+sys.argv = ['JOJOSoul-ng.py', '--terminal']
+`);
+
         // 执行显示管理器代码到全局命名空间
         await pyodide.runPythonAsync(displayCode);
 
@@ -225,7 +231,7 @@ async function main() {
     console.log('启动游戏...');
     await pyodide.runPythonAsync(`
 import sys
-sys.argv = ['JOJOSoul-ng.py', '--terminal']
+# sys.argv 已经在加载代码时设置为 ['JOJOSoul-ng.py', '--terminal']
 game = Game()
 game.display = web_display
 game.player.display = web_display
