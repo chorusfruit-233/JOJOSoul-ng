@@ -21,6 +21,23 @@ async function initPyodide() {
 // 加载游戏代码
 async function loadGameCode() {
     try {
+        // 先设置命令行参数和模拟 input 函数
+        await pyodide.runPythonAsync(`
+import sys
+import os
+from pathlib import Path
+import builtins
+
+# 设置命令行参数
+sys.argv = ['JOJOSoul-ng.py', '--terminal']
+
+# 模拟 input 函数
+def web_input(prompt=""):
+    return "勇者"
+
+builtins.input = web_input
+`);
+
         // 加载主游戏文件
         const response = await fetch('../JOJOSoul-ng.py');
         const gameCode = await response.text();
@@ -28,12 +45,6 @@ async function loadGameCode() {
         // 加载显示管理器
         const displayResponse = await fetch('../display_manager.py');
         const displayCode = await displayResponse.text();
-
-        // 先设置命令行参数，确保游戏直接进入终端模式
-        await pyodide.runPythonAsync(`
-import sys
-sys.argv = ['JOJOSoul-ng.py', '--terminal']
-`);
 
         // 执行显示管理器代码到全局命名空间
         await pyodide.runPythonAsync(displayCode);
