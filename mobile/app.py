@@ -32,24 +32,19 @@ class JOJOSoulApp(toga.App):
 
         # 添加标题
         title_label = toga.Label(
-            "JOJO Soul",
-            style=Pack(font_size=24, padding=(0, 10))
+            "JOJO Soul", style=Pack(font_size=24, padding=(0, 10))
         )
         box.add(title_label)
 
         # 添加开始按钮
         start_button = toga.Button(
-            "开始游戏",
-            on_press=self.start_game,
-            style=Pack(padding=10)
+            "开始游戏", on_press=self.start_game, style=Pack(padding=10)
         )
         box.add(start_button)
 
         # 添加退出按钮
         exit_button = toga.Button(
-            "退出",
-            on_press=self.exit_app,
-            style=Pack(padding=10)
+            "退出", on_press=self.exit_app, style=Pack(padding=10)
         )
         box.add(exit_button)
 
@@ -64,10 +59,7 @@ class JOJOSoulApp(toga.App):
         # TODO: 启动游戏
         # 这里需要导入并运行游戏
         # 注意：需要修改游戏代码以支持移动端显示管理器
-        self.main_window.info_dialog(
-            "提示",
-            "移动端游戏功能正在开发中..."
-        )
+        self.main_window.info_dialog("提示", "移动端游戏功能正在开发中...")
 
     def exit_app(self, widget):
         """退出应用"""

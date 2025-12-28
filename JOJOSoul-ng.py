@@ -532,7 +532,9 @@ class Game:
                     name == "暗影刺客"
                     and not self.achievements["暗影克星"]["completed"]
                 ):
-                    self.display.show_message("成就解锁", "🏆 成就解锁：暗影克星！")
+                    self.display.show_message(
+                        "成就解锁", "🏆 成就解锁：暗影克星！"
+                    )
                     self.complete_achievement("暗影克星")
                     self.display.show_message(
                         "成就解锁", "🏆 成就解锁：风暴掌控者！"
@@ -1267,7 +1269,9 @@ class Game:
                 # 检查技能新手成就
                 if not self.achievements["技能新手"]["completed"]:
                     self.complete_achievement("技能新手")
-                    self.display.show_message("成就解锁", "🏆 成就解锁：技能新手！")
+                    self.display.show_message(
+                        "成就解锁", "🏆 成就解锁：技能新手！"
+                    )
             else:
                 self.display.show_message("错误", "技能点不足！")
         elif action == "使用技能":
@@ -1709,7 +1713,9 @@ class Game:
             self.player.max_life += val
             if self.display:
                 self.display.show_info(f"抽奖结果：生命上限变化 {val}")
-                self.display.show_message("宝箱抽奖", f"抽奖结果：生命上限变化 {val}")
+                self.display.show_message(
+                    "宝箱抽奖", f"抽奖结果：生命上限变化 {val}"
+                )
         elif outcome == 2:
             val = random.randint(-5, 10)
             self.player.attack += val
