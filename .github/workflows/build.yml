@@ -113,67 +113,67 @@ jobs:
         publish_dir: ./web
         publish_branch: gh-pages
 
-  # 移动端构建（Android）
-  mobile-android:
-    name: Mobile Android Build
-    needs: test
-    runs-on: ubuntu-latest
+  # 移动端构建（Android）- 暂时禁用，等待 Briefcase 配置完成
+  # mobile-android:
+  #   name: Mobile Android Build
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   if: false  # 暂时禁用
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v5
+  #     with:
+  #       python-version: '3.12'
 
-    - name: Install Briefcase
-      run: |
-        python -m pip install --upgrade pip
-        pip install briefcase
+  #   - name: Install Briefcase
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install briefcase
 
-    - name: Build Android APK
-      run: |
-        cd mobile
-        briefcase build android
-        briefcase package android
+  #   - name: Build Android APK
+  #     run: |
+  #       briefcase build android
+  #       briefcase package android
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-apk
-        path: mobile/build/josoul/app.apk
+  #   - name: Upload APK
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: android-apk
+  #       path: mobile/build/josoul/app.apk
 
-  # 移动端构建（iOS）
-  mobile-ios:
-    name: Mobile iOS Build
-    needs: test
-    runs-on: macos-latest
+  # 移动端构建（iOS）- 暂时禁用，等待 Briefcase 配置完成
+  # mobile-ios:
+  #   name: Mobile iOS Build
+  #   needs: test
+  #   runs-on: macos-latest
+  #   if: false  # 暂时禁用
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v5
+  #     with:
+  #       python-version: '3.12'
 
-    - name: Install Briefcase
-      run: |
-        python -m pip install --upgrade pip
-        pip install briefcase
+  #   - name: Install Briefcase
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install briefcase
 
-    - name: Build iOS IPA
-      run: |
-        cd mobile
-        briefcase build ios
-        briefcase package ios
+  #   - name: Build iOS IPA
+  #     run: |
+  #       briefcase build ios
+  #       briefcase package ios
 
-    - name: Upload IPA
-      uses: actions/upload-artifact@v4
-      with:
-        name: ios-ipa
-        path: mobile/build/josoul/app.ipa
+  #   - name: Upload IPA
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: ios-ipa
+  #       path: mobile/build/josoul/app.ipa
 
   # Linux .deb 包构建（多架构）
   deb-package:
