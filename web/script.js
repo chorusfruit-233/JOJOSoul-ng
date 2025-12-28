@@ -24,12 +24,29 @@ async function loadGameCode() {
         await pyodide.runPythonAsync(`
 import sys
 sys.argv = ['JOJOSoul-ng.py', '--terminal']
+`);
 
+        // 注册 JavaScript 函数到 Pyodide
+        pyodide.registerJsModule('js', {
+            show_message_box: showMessageBox,
+            show_choice_box: showChoiceBox,
+            show_button_box: showButtonBox,
+            show_input_box: showInputBox,
+            append_output: appendOutput,
+            request_input: requestInput,
+            wait_for_input: waitForInput
+        });
+
+        // 设置 input 函数模拟
+        await pyodide.runPythonAsync(`
 import builtins
+import js
+
 # 模拟 input 函数
 def web_input(prompt=""):
-    import js
-    return js.show_input_box("输入", prompt)
+    # 使用对话框获取输入
+    result = js.show_input_box("输入", prompt)
+    return result
 
 builtins.input = web_input
 `);
