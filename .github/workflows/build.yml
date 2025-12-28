@@ -110,8 +110,9 @@ jobs:
       if: github.ref == 'refs/heads/master'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./web
+        publish_dir: ./
         publish_branch: gh-pages
+        exclude_file: .pagesignore
 
   # 移动端构建（Android）- 暂时禁用，等待 Briefcase 配置完成
   # mobile-android:
