@@ -109,7 +109,8 @@ sys.modules['display_manager'] = type('Module', (), {
 
 // 初始化 Web 环境（存储、文件 IO、存档路径覆盖）
 async function initWebDisplay() {
-    await pyodide.runPythonAsync(`
+    try {
+        await pyodide.runPythonAsync(`
 import sys
 import os
 from pathlib import Path
@@ -172,10 +173,13 @@ def web_get_save_path():
 
 # 游戏代码已在全局命名空间中执行，直接覆盖 get_save_path
 get_save_path = web_get_save_path
-
-# 终端 DisplayManager 不使用 GUI（Pyodide 无 tkinter/easygui）
-display_manager.DisplayManager.gui_available = False
 `);
+    } catch (error) {
+        console.error('Web 环境初始化失败:', error);
+        showError('Web 环境初始化失败: ' + error.message);
+        return false;
+    }
+    return true;
 }
 
 // 显示错误
@@ -334,24 +338,30 @@ function closeModal() {
 
 // 主初始化函数
 async function main() {
-    const pyodideLoaded = await initPyodide();
-    if (!pyodideLoaded) return;
+    try {
+        const pyodideLoaded = await initPyodide();
+        if (!pyodideLoaded) return;
 
-    const gameLoaded = await loadGameCode();
-    if (!gameLoaded) return;
+        const gameLoaded = await loadGameCode();
+        if (!gameLoaded) return;
 
-    await initWebDisplay();
+        const webReady = await initWebDisplay();
+        if (!webReady) return;
 
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('game-container').style.display = 'flex';
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
 
-    console.log('启动游戏...');
-    // run() 会读取 sys.argv 中的 '--terminal' 并创建终端 DisplayManager，
-    // 其所有交互通过已重定向的 print(→ append_output) 和 input(→ js.prompt) 完成。
-    await pyodide.runPythonAsync(`
+        console.log('启动游戏...');
+        // run() 会读取 sys.argv 中的 '--terminal' 并创建终端 DisplayManager，
+        // 其所有交互通过已重定向的 print(→ append_output) 和 input(→ js.prompt) 完成。
+        await pyodide.runPythonAsync(`
 game = Game()
 game.run()
-    `);
+        `);
+    } catch (error) {
+        console.error('游戏运行失败:', error);
+        showError('游戏运行失败: ' + error.message);
+    }
 }
 
 window.addEventListener('load', main);
