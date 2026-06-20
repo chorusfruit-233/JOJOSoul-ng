@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ['3.12', '3.14']
 
     steps:
     - uses: actions/checkout@v4
@@ -39,13 +39,8 @@ jobs:
       env:
         CI: true
       run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          # CI 环境中只运行核心逻辑测试
-          python -m pytest tests/test_core.py -v
-        else
-          # 本地环境运行所有测试
-          python -m pytest tests/ -v
-        fi
+        # 运行完整测试套件（CI=true 使测试跳过需要真实 GUI 的用例）
+        xvfb-run -a python -m pytest tests/ -v
 
     - name: Check code quality
       run: |

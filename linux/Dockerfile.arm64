@@ -44,9 +44,12 @@ RUN cp dist/josoul josoul-deb/usr/local/bin/ \
 
 COPY linux/josoul.desktop josoul-deb/usr/share/applications/
 
+# 复制图标目录（若存在 josoul.png 则一并打入 .deb）
+COPY icons/ ./icons/
+
 RUN if [ -f icons/josoul.png ]; then \
         cp icons/josoul.png josoul-deb/usr/share/icons/hicolor/256x256/apps/; \
-    fi
+     fi
 
 RUN cat > josoul-deb/DEBIAN/control << 'EOF'
 Package: josoul

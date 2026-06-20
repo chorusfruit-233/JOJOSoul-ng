@@ -2,6 +2,38 @@
 
 ## 最新发布
 
+### v2.3.0 - Web 版本与成就修复版 (2026-06-21)
+
+#### 🌐 Web 版本修复
+- 修复 Web 版本无法交互的核心问题：`input()` 返回 Promise 而非字符串
+  （改用浏览器原生 `js.prompt` 同步阻塞对话框，Pyodide 同步 Python 可真正等待输入）
+- `input()` 对话框包含最近输出上下文，用户可在弹窗中看到菜单/战斗状态
+- 修复游戏代码在 Pyodide 加载时因 `__main__` 守卫自动启动的问题
+- 修复 `import JOJOSoul_ng` 模块注册失败的问题
+- 修复 `request_input`/`wait_for_input` 未定义导致的 `ReferenceError`
+- 将 JavaScript 桥接模块从 `js` 重命名为 `webgui`，避免遮蔽 Pyodide 内置模块
+- 移除未使用的 `WebDisplayManager`（Web 版通过终端 DisplayManager + 重定向 I/O 运行）
+
+#### 🏆 成就系统修复
+- 修复风暴掌控者成就无法获得的问题（缺少雷电元素判定分支）
+- 修复击败暗影刺客时错误显示风暴掌控者成就解锁提示的问题
+- 统一技能专家/技能宗师成就阈值为 10 级（描述与检查逻辑一致）
+
+#### 🛠️ Bug 修复
+- 修复普通战斗中玩家死亡后游戏仍继续的问题（14 处战斗调用未检查返回值）
+- 修复 `check_achievements` 在 `display` 为 None 时崩溃的问题
+- 修复 `display_manager.py` 中 `exp_needed` 属性错误（应为 `exp_to_next`）
+- 修复古代神殿击败记录（`temple_enemies_defeated`）不被存档/读档的问题
+- 修复无尽模式最高分（`endless_high_score`）不被存档/读档的问题
+
+#### 💻 技术改进
+- 统一 `get_version_content` 输出格式，与 `generate_fallback_content` 一致
+- 修复 `RELEASE.md` 中重复的"版本管理"标题
+- 修复测试中过时的难度阈值断言（坤难/炼狱）和商店测试的无限循环
+- 更新版本号至 2.3.0
+
+---
+
 ### v2.2.0 - 技能系统增强版 (2025-12-21)
 
 #### 🔥 技能系统重大改进
@@ -135,8 +167,6 @@
 - 优化错误处理机制
 
 ---
-
-## 版本管理
 
 ## 版本管理
 
