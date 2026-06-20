@@ -91,23 +91,59 @@ jobs:
           dist/${{ matrix.binary_name }}${{ matrix.binary_extension }}
           dist/${{ matrix.binary_name }}.app  # macOS
 
-  # Web 版本构建
+  # Web 版本构建 - 部署到 GitHub Pages
   web:
-    name: Web Build
+    name: Web Build (GitHub Pages)
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/master'
+    - name: 准备 Pages 部署内容
+      run: |
+        # 创建部署目录，只包含 Web 版运行所需文件
+        # Pyodide 在浏览器中通过 fetch 加载游戏代码
+        mkdir -p site/web
+        cp -r web/* site/web/
+        # 游戏主文件（web/script.js 通过 fetch('../JOJOSoul-ng.py') 加载）
+        cp JOJOSoul-ng.py site/
+        cp display_manager.py site/
+        # 根目录重定向页（跳转到 web/index.html）
+        cat > site/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="refresh" content="0; url=web/index.html">
+            <title>JOJO Soul - 重定向中...</title>
+        </head>
+        <body>
+            <p>正在跳转到 Web 版游戏...</p>
+            <p>如果没有自动跳转，请 <a href="web/index.html">点击这里</a></p>
+        </body>
+        </html>
+        EOF
+        # .nojekyll 避免 GitHub Pages 的 Jekyll 处理
+        touch site/.nojekyll
+        # 列出部署内容
+        echo "=== 部署内容 ==="
+        find site -type f | sort
+
+    - name: 上传 Pages 制品
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./
-        publish_branch: gh-pages
-        exclude_file: .pagesignore
+        path: site
+
+    - name: 部署到 GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
 
   # 移动端构建（Android）- 暂时禁用，等待 Briefcase 配置完成
   # mobile-android:
