@@ -111,14 +111,20 @@ class TestGame:
         # 测试坤难难度
         mock_choicebox.return_value = "坤难"
         game.set_difficulty()
-        assert game.lmode == 1.3
-        assert game.amode == 1.3
+        assert game.lmode == 1.5
+        assert game.amode == 1.6
 
         # 测试炼狱难度
         mock_choicebox.return_value = "炼狱"
         game.set_difficulty()
-        assert game.lmode == 1.5
-        assert game.amode == 1.5
+        assert game.lmode == 2.0
+        assert game.amode == 2.2
+
+        # 测试地狱难度
+        mock_choicebox.return_value = "地狱"
+        game.set_difficulty()
+        assert game.lmode == 2.5
+        assert game.amode == 2.8
 
     def test_new_enemies_initialization(self):
         """测试新敌人初始化"""
@@ -287,9 +293,10 @@ class TestGame:
         game = Game()
         # 设置display为Mock对象
         game.display = Mock()
-        # 让display.get_choice返回mock_choicebox.return_value
-        game.display.get_choice = (
-            lambda title, choices: mock_choicebox.return_value
+        # 让display.get_choice依次返回力量护符、离开商店，避免无限循环
+        choices_sequence = ["力量护符 [150G, +3伤害下限倍率]", "离开商店"]
+        game.display.get_choice = lambda title, choices: (
+            choices_sequence.pop(0) if choices_sequence else "离开商店"
         )
         game.display.show_message = Mock()  # 模拟show_message调用
 
@@ -299,7 +306,6 @@ class TestGame:
         game.player.crit_max = 2
 
         # 模拟选择力量护符
-        mock_choicebox.return_value = "力量护符 [150G, +3伤害下限倍率]"
         game.shop()
 
         # 验证属性更新正确
@@ -314,9 +320,10 @@ class TestGame:
         game = Game()
         # 设置display为Mock对象
         game.display = Mock()
-        # 让display.get_choice返回mock_choicebox.return_value
-        game.display.get_choice = (
-            lambda title, choices: mock_choicebox.return_value
+        # 让display.get_choice依次返回力量护符、离开商店，避免无限循环
+        choices_sequence = ["力量护符 [150G, +3伤害下限倍率]", "离开商店"]
+        game.display.get_choice = lambda title, choices: (
+            choices_sequence.pop(0) if choices_sequence else "离开商店"
         )
         game.display.show_message = Mock()  # 模拟show_message调用
 
@@ -326,7 +333,6 @@ class TestGame:
         game.player.crit_max = 5  # 当前上限只比下限高1
 
         # 购买力量护符（+3下限），新下限=7，会超过当前上限5
-        mock_choicebox.return_value = "力量护符 [150G, +3伤害下限倍率]"
         game.shop()
 
         # 验证边界检查生效：上限应同步提升到7

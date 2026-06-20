@@ -27,33 +27,54 @@ sys.argv = ['JOJOSoul-ng.py', '--terminal']
 `);
 
         // 注册 JavaScript 函数到 Pyodide
-        pyodide.registerJsModule('js', {
-            show_message_box: showMessageBox,
-            show_choice_box: showChoiceBox,
-            show_button_box: showButtonBox,
-            show_input_box: showInputBox,
-            append_output: appendOutput,
-            request_input: requestInput,
-            wait_for_input: waitForInput
+        // 注意：不使用 'js' 作为模块名，避免遮蔽 Pyodide 内置的 js 全局模块
+        // （内置 js 模块提供 js.prompt/js.alert/js.confirm 等同步阻塞对话框）
+        // Web 版交互通过终端 DisplayManager + 重定向的 print/input 完成，
+        // 此处仅需注册 append_output 用于将 print 输出写入页面日志区。
+        pyodide.registerJsModule('webgui', {
+            append_output: appendOutput
         });
 
         // 设置 input 函数模拟
+        // 关键：使用浏览器原生 js.prompt（同步阻塞），使同步 Python 代码
+        // 能真正等待用户输入。Pyodide 同步 Python 无法 await Promise。
         await pyodide.runPythonAsync(`
 import builtins
-import js
+import webgui
 
-# 模拟 input 函数
+# 最近输出缓冲：让 input 对话框能显示上下文（菜单选项等）
+_output_buffer = []
+
+def web_print(*args, **kwargs):
+    import webgui
+    text = ' '.join(str(arg) for arg in args)
+    _output_buffer.append(text)
+    webgui.append_output(text)
+
 def web_input(prompt=""):
-    # 使用对话框获取输入
-    result = js.show_input_box("输入", prompt)
-    return result
+    import js
+    # 将最近的输出作为上下文显示在 prompt 对话框中，
+    # 这样用户在选择时能看到菜单/战斗状态等信息。
+    context = '\\n'.join(_output_buffer[-30:])
+    _output_buffer.clear()
+    full_prompt = (context + '\\n\\n' + str(prompt)) if context else str(prompt)
+    result = js.prompt(full_prompt)
+    # 用户点击取消时返回空字符串（避免 .strip() 在 None 上崩溃）
+    if result is None:
+        return ""
+    return str(result)
 
+builtins.print = web_print
 builtins.input = web_input
 `);
 
         // 加载主游戏文件
         const response = await fetch('../JOJOSoul-ng.py');
-        const gameCode = await response.text();
+        let gameCode = await response.text();
+
+        // 剥离 __main__ 守卫块，避免游戏在加载时自动启动
+        // （Pyodide 全局命名空间中 __name__ == "__main__"，会导致 game.run() 立即执行）
+        gameCode = gameCode.replace(/if __name__ == .__main__.:[\s\S]*$/, '');
 
         // 加载显示管理器
         const displayResponse = await fetch('../display_manager.py');
@@ -74,12 +95,6 @@ sys.modules['display_manager'] = type('Module', (), {
 })()
 `);
 
-        // 禁用 display_manager 的 GUI 功能
-        await pyodide.runPythonAsync(`
-import display_manager
-display_manager.DisplayManager.gui_available = False
-`);
-
         // 执行游戏代码到全局命名空间
         await pyodide.runPythonAsync(gameCode);
 
@@ -92,7 +107,7 @@ display_manager.DisplayManager.gui_available = False
     }
 }
 
-// 初始化 Web 显示管理器
+// 初始化 Web 环境（存储、文件 IO、存档路径覆盖）
 async function initWebDisplay() {
     await pyodide.runPythonAsync(`
 import sys
@@ -100,27 +115,20 @@ import os
 from pathlib import Path
 import builtins
 
-# 模拟 print 函数
-_original_print = print
-def web_print(*args, **kwargs):
-    import js
-    text = ' '.join(str(arg) for arg in args)
-    js.append_output(text)
+# 注：print/input 的 web 模拟已在 loadGameCode 中设置（带输出缓冲上下文）
 
-print = web_print
-
-# Web 存储模拟
+# Web 存储模拟（存档持久化到内存，页面刷新后丢失）
 class WebStorage:
     def __init__(self):
         self.data = {}
-    
+
     def read(self, path):
         return self.data.get(str(path), None)
-    
+
     def write(self, path, content):
         self.data[str(path)] = content
         return True
-    
+
     def exists(self, path):
         return str(path) in self.data
 
@@ -140,13 +148,13 @@ class WebFile:
         self.path = path
         self.mode = mode
         self.content = web_storage.read(path) or ''
-    
+
     def read(self):
         return self.content
-    
+
     def write(self, content):
         self.content += content
-    
+
     def close(self):
         if 'w' in self.mode:
             web_storage.write(self.path, self.content)
@@ -162,46 +170,12 @@ def web_get_save_path():
     from pathlib import Path
     return Path('/web/savegame.dat')
 
-import JOJOSoul_ng
-JOJOSoul_ng.get_save_path = web_get_save_path
+# 游戏代码已在全局命名空间中执行，直接覆盖 get_save_path
+get_save_path = web_get_save_path
 
+# 终端 DisplayManager 不使用 GUI（Pyodide 无 tkinter/easygui）
 display_manager.DisplayManager.gui_available = False
-
-# Web 显示管理器 - 类似 easygui
-class WebDisplayManager:
-    def __init__(self):
-        self.gui_available = False
-        self.messages = []
-    
-    def show_message(self, title, message):
-        import js
-        js.show_message_box(title, message)
-    
-    def show_info(self, info):
-        import js
-        js.show_message_box("信息", info)
-    
-    def get_choice(self, title, choices):
-        import js
-        return js.show_choice_box(title, choices)
-    
-    def get_yes_no(self, title, message):
-        import js
-        return js.show_button_box(title, message, ["是", "否"]) == "是"
-    
-    def get_input(self, title, prompt):
-        import js
-        return js.show_input_box(title, prompt)
-    
-    def show_battle_info(self, title, message):
-        import js
-        js.show_message_box(title, message)
-    
-    def _sync_to_js(self):
-        pass
-
-web_display = WebDisplayManager()
-    `);
+`);
 }
 
 // 显示错误
@@ -372,10 +346,10 @@ async function main() {
     document.getElementById('game-container').style.display = 'flex';
 
     console.log('启动游戏...');
+    // run() 会读取 sys.argv 中的 '--terminal' 并创建终端 DisplayManager，
+    // 其所有交互通过已重定向的 print(→ append_output) 和 input(→ js.prompt) 完成。
     await pyodide.runPythonAsync(`
 game = Game()
-game.display = web_display
-game.player.display = web_display
 game.run()
     `);
 }

@@ -128,7 +128,10 @@ class ReleaseReader:
             version: Version string (e.g., "2.0.0")
 
         Returns:
-            Raw content string or None if not found
+            Formatted content string or None if not found.
+            The content is wrapped in a consistent template
+            (matching generate_fallback_content) so release body
+            output is uniform whether or not the file is readable.
         """
         if not self.versions:
             self.parse_versions()
@@ -138,11 +141,22 @@ class ReleaseReader:
             return None
 
         version_data = self.versions[version]
+        body = version_data["content"].strip()
 
-        # Return the version header and content from RELEASE.md
         return (
+            f"## JOJO Soul v{version}\n\n"
             f"### v{version} - {version_data['title']} "
-            f"({version_data['date']})\n\n{version_data['content']}"
+            f"({version_data['date']})\n\n"
+            f"{body}\n\n"
+            f"### 📦 安装说明\n"
+            f"1. 下载对应平台的可执行文件\n"
+            f"2. 直接运行即可开始游戏\n\n"
+            f"### 🌟 系统要求\n"
+            f"- Windows 10/11\n"
+            f"- macOS 10.14+\n"
+            f"- Linux (支持图形界面)\n\n"
+            f"查看完整更新日志请访问 "
+            f"[项目主页](https://github.com/chorusfruit-233/JOJOSoul-ng)\n"
         )
 
     def get_latest_version(self) -> Optional[str]:

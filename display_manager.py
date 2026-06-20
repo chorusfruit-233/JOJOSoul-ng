@@ -312,7 +312,7 @@ class DisplayManager:
             info = f"""
 === 角色信息 ===
 等级: {player_or_info.level}
-经验值: {player_or_info.exp}/{player_or_info.exp_needed}
+经验值: {player_or_info.exp}/{player_or_info.exp_to_next}
 生命值: {player_or_info.life}/{player_or_info.max_life}
 攻击力: {player_or_info.attack}
 金币: {player_or_info.coin}

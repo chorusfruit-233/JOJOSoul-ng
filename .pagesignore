@@ -39,8 +39,6 @@ Thumbs.db
 *.md
 !README.md
 LICENSE
-DEVELOPMENT.md
-RELEASE.md
 
 # Test
 tests

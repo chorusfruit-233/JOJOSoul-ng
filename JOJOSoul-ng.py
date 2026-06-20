@@ -194,12 +194,12 @@ class Game:
                 "reward": 800,
             },
             "技能专家": {
-                "description": "单个技能达到5级",
+                "description": "单个技能达到10级",
                 "completed": False,
                 "reward": 500,
             },
             "技能宗师": {
-                "description": "所有技能达到5级",
+                "description": "所有技能达到10级",
                 "completed": False,
                 "reward": 2000,
             },
@@ -258,6 +258,8 @@ class Game:
         self.endless_wave = 0  # 当前波数
         self.endless_difficulty = 1.0  # 难度乘数（每波增加）
         self.endless_high_score = 0  # 最高分（击败敌人总数）
+        # 古代神殿击败敌人记录（用于神殿英雄成就）
+        self.temple_enemies_defeated = []
 
     def set_difficulty(self):
         if self.display is None:
@@ -532,21 +534,22 @@ class Game:
                     name == "暗影刺客"
                     and not self.achievements["暗影克星"]["completed"]
                 ):
+                    self.complete_achievement("暗影克星")
                     self.display.show_message(
                         "成就解锁", "🏆 成就解锁：暗影克星！"
                     )
-                    self.complete_achievement("暗影克星")
+                elif (
+                    name == "雷电元素"
+                    and not self.achievements["风暴掌控者"]["completed"]
+                ):
+                    self.complete_achievement("风暴掌控者")
                     self.display.show_message(
                         "成就解锁", "🏆 成就解锁：风暴掌控者！"
                     )
                 elif name in ["石像守卫", "古代法师", "神殿骑士"]:
                     # 检查是否击败了所有神殿敌人
-                    temple_enemies_defeated = getattr(
-                        self, "temple_enemies_defeated", []
-                    )
-                    if name not in temple_enemies_defeated:
-                        temple_enemies_defeated.append(name)
-                        self.temple_enemies_defeated = temple_enemies_defeated
+                    if name not in self.temple_enemies_defeated:
+                        self.temple_enemies_defeated.append(name)
 
                     if (
                         len(self.temple_enemies_defeated) >= 3
@@ -562,6 +565,22 @@ class Game:
                 break
         return True  # 战斗胜利
 
+    def _battle_or_die(self, *args, **kwargs):
+        """战斗包装方法：玩家死亡时显示游戏结束并返回主菜单。
+
+        恢复少量生命值避免死亡状态影响后续菜单操作，
+        行为与 endless_mode 中的死亡处理保持一致。
+        """
+        result = self.battle(*args, **kwargs)
+        if result is False:
+            # 玩家死亡，恢复生命值并返回主菜单
+            self.player.life = max(1.0, self.player.life)
+            self.display.show_message(
+                "游戏结束",
+                "你被打败了，但命运给了你重来的一次机会...\n已返回主菜单。",
+            )
+        return result
+
     def boss_battle(self):
         self.display.show_battle_info("最终战斗", "普奇神父")
         time.sleep(1)
@@ -573,7 +592,14 @@ class Game:
             "Boss登场", '普奇神父向你靠来:"[MADE IN HEAVEN!]"'
         )
 
+        # 战斗开始时重置技能状态（与普通战斗保持一致）
+        self.player.shield_active = False
+        self.player.time_slow_active = False
+
         while True:
+            # 每回合更新技能冷却
+            self.update_skill_cooldowns()
+
             crit = self.get_attack_multiplier()
             if not self.display.get_yes_no(
                 "Heaven",
@@ -1632,17 +1658,17 @@ class Game:
             self.complete_achievement("技能大师")
             newly_completed.append("技能大师")
 
-        # 检查技能专家：任意单个技能达到5级
+        # 检查技能专家：任意单个技能达到10级
         if (
-            any(skill["level"] >= 5 for skill in self.player.skills.values())
+            any(skill["level"] >= 10 for skill in self.player.skills.values())
             and not self.achievements["技能专家"]["completed"]
         ):
             self.complete_achievement("技能专家")
             newly_completed.append("技能专家")
 
-        # 检查技能宗师：所有技能达到5级
+        # 检查技能宗师：所有技能达到10级
         if (
-            all(skill["level"] >= 5 for skill in self.player.skills.values())
+            all(skill["level"] >= 10 for skill in self.player.skills.values())
             and not self.achievements["技能宗师"]["completed"]
         ):
             self.complete_achievement("技能宗师")
@@ -1659,9 +1685,12 @@ class Game:
         # 显示新完成的成就
         if newly_completed:
             achievement_names = "、".join(newly_completed)
-            self.display.show_message(
-                "成就系统", f"🏆 成就解锁：{achievement_names}！"
-            )
+            if self.display:
+                self.display.show_message(
+                    "成就系统", f"🏆 成就解锁：{achievement_names}！"
+                )
+            else:
+                print(f"🏆 成就解锁：{achievement_names}！")
 
     def complete_achievement(self, achievement_name):
         """完成成就并发放奖励"""
@@ -1765,6 +1794,8 @@ class Game:
             "temporary_element_boost": (self.player.temporary_element_boost),
             "temporary_boost_turns": self.player.temporary_boost_turns,
             "skill_points": self.player.skill_points,
+            "endless_high_score": self.endless_high_score,
+            "temple_enemies_defeated": ",".join(self.temple_enemies_defeated),
         }
 
         # 保存技能数据
@@ -1828,6 +1859,16 @@ class Game:
                 save_data.get("temporary_boost_turns", 0)
             )
             self.player.skill_points = int(save_data.get("skill_points", 0))
+
+            # 恢复无尽模式最高分
+            self.endless_high_score = int(
+                save_data.get("endless_high_score", 0)
+            )
+            # 恢复古代神殿击败记录
+            temple_str = save_data.get("temple_enemies_defeated", "")
+            self.temple_enemies_defeated = (
+                [e for e in temple_str.split(",") if e] if temple_str else []
+            )
 
             # 加载技能数据
             for skill_name in self.player.skills.keys():
@@ -2059,7 +2100,7 @@ class Game:
                 self.save_game()
             elif action == "丛林":
                 # 树妖：火x2, 水x0.5...
-                self.battle(
+                self._battle_or_die(
                     "树妖",
                     120,
                     random.randint(4, 10),
@@ -2074,7 +2115,7 @@ class Game:
                 )
             elif action == "山洞":
                 # 吸血鬼
-                self.battle(
+                self._battle_or_die(
                     "吸血鬼",
                     200,
                     18,
@@ -2091,7 +2132,7 @@ class Game:
                 # 25%概率出现高级变种深渊吞噬者，否则为普通沼泽怪
                 if random.random() < 0.25:
                     # 深渊吞噬者
-                    self.battle(
+                    self._battle_or_die(
                         "深渊吞噬者",
                         420,
                         38,
@@ -2106,7 +2147,7 @@ class Game:
                     )
                 else:
                     # 沼泽怪
-                    self.battle(
+                    self._battle_or_die(
                         "沼泽怪",
                         250,
                         17,
@@ -2121,7 +2162,7 @@ class Game:
                     )
             elif action == "熔岩地下城":
                 # 熔岩怪：注意这里火是-2.0(回血)，原代码逻辑复现
-                self.battle(
+                self._battle_or_die(
                     "熔岩怪",
                     150,
                     12,
@@ -2142,7 +2183,7 @@ class Game:
                     )
                     continue
                 # 冰霜巨人
-                self.battle(
+                self._battle_or_die(
                     "冰霜巨人",
                     300,
                     25,
@@ -2163,7 +2204,7 @@ class Game:
                     )
                     continue
                 # 暗影刺客
-                self.battle(
+                self._battle_or_die(
                     "暗影刺客",
                     180,
                     30,
@@ -2184,7 +2225,7 @@ class Game:
                     )
                     continue
                 # 雷电元素
-                self.battle(
+                self._battle_or_die(
                     "雷电元素",
                     220,
                     28,
@@ -2210,7 +2251,7 @@ class Game:
                     ["石像守卫", "古代法师", "神殿骑士"],
                 )
                 if enemy_choice == "石像守卫":
-                    self.battle(
+                    self._battle_or_die(
                         "石像守卫",
                         350,
                         35,
@@ -2224,7 +2265,7 @@ class Game:
                         },
                     )
                 elif enemy_choice == "古代法师":
-                    self.battle(
+                    self._battle_or_die(
                         "古代法师",
                         280,
                         40,
@@ -2238,7 +2279,7 @@ class Game:
                         },
                     )
                 elif enemy_choice == "神殿骑士":
-                    self.battle(
+                    self._battle_or_die(
                         "神殿骑士",
                         400,
                         30,
@@ -2260,7 +2301,7 @@ class Game:
                     )
                     continue
                 # 时空扭曲者
-                self.battle(
+                self._battle_or_die(
                     "时空扭曲者",
                     280,
                     32,
@@ -2281,7 +2322,7 @@ class Game:
                     )
                     continue
                 # 神圣护卫
-                self.battle(
+                self._battle_or_die(
                     "神圣护卫",
                     380,
                     42,
@@ -2325,7 +2366,7 @@ class Game:
                 # 保存原始battle调用，战斗胜利后手动增加经验
                 original_monsters_defeated = self.player.monsters_defeated
 
-                self.battle(
+                self._battle_or_die(
                     "混沌元素",
                     base_hp,
                     base_atk,
