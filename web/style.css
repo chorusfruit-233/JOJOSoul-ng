@@ -1,14 +1,25 @@
-/* JOJO Soul Web 版样式 */
+/* JOJO Soul Web 版 - 现代深色主题 */
 
 :root {
-    --primary-color: #ff6b6b;
-    --secondary-color: #4ecdc4;
-    --background-color: #1a1a2e;
-    --surface-color: #16213e;
-    --text-color: #e94560;
-    --text-secondary: #a8a8a8;
-    --border-radius: 8px;
-    --spacing: 16px;
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #21262d;
+    --border: #30363d;
+    --primary: #f85149;
+    --primary-hover: #ff6b6b;
+    --secondary: #58a6ff;
+    --secondary-hover: #79b8ff;
+    --success: #3fb950;
+    --warning: #d29922;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --gap: 16px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
+        sans-serif;
+    --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas,
+        monospace;
 }
 
 * {
@@ -18,349 +29,401 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    line-height: 1.6;
 }
 
-/* 加载界面 */
+/* ===== 加载界面 ===== */
 #loading {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background-color: var(--background-color);
+    background: radial-gradient(
+        ellipse at top,
+        #1a1f2e 0%,
+        var(--bg) 70%
+    );
+}
+
+.loading-card {
+    text-align: center;
+    padding: 48px;
 }
 
 .spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid var(--surface-color);
-    border-top-color: var(--primary-color);
+    width: 56px;
+    height: 56px;
+    border: 4px solid var(--surface-2);
+    border-top-color: var(--primary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: var(--spacing);
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 24px;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-/* 游戏容器 */
+#loading-text {
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.loading-hint {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.error-box {
+    text-align: center;
+    padding: 32px;
+    max-width: 480px;
+}
+
+.error-box h2 {
+    color: var(--primary);
+    margin-bottom: 16px;
+}
+
+.error-box p {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+/* ===== 游戏主界面 ===== */
 #game-container {
     flex: 1;
     display: flex;
     flex-direction: column;
-    max-width: 1200px;
+    max-width: 900px;
     margin: 0 auto;
-    padding: var(--spacing);
     width: 100%;
+    padding: var(--gap);
+    min-height: 100vh;
 }
 
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing);
-    background-color: var(--surface-color);
-    border-radius: var(--border-radius);
-    margin-bottom: var(--spacing);
+    padding: 16px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: var(--gap);
+}
+
+.header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
 }
 
 header h1 {
-    font-size: 2rem;
-    color: var(--primary-color);
+    font-size: 1.5rem;
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .version {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    background: var(--surface-2);
+    padding: 2px 8px;
+    border-radius: 20px;
 }
 
+.header-right {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-btn {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.icon-btn:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+/* ===== 游戏输出区（终端风格） ===== */
 main {
     flex: 1;
-    background-color: var(--surface-color);
-    border-radius: var(--border-radius);
-    padding: var(--spacing);
-    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-/* 游戏输出区域 */
 #game-output {
     flex: 1;
     overflow-y: auto;
-    padding: var(--spacing);
-    background-color: var(--background-color);
-    border-radius: var(--border-radius);
-    min-height: 300px;
-    max-height: 500px;
+    padding: 20px 24px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text);
+    min-height: 400px;
+    max-height: calc(100vh - 220px);
+    scroll-behavior: smooth;
 }
 
 #game-output p {
-    margin-bottom: 8px;
-    line-height: 1.5;
+    margin-bottom: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
-#game-output .message {
-    color: var(--secondary-color);
-    margin: var(--spacing) 0;
-    padding: var(--spacing);
-    background-color: var(--surface-color);
-    border-left: 4px solid var(--secondary-color);
-    border-radius: var(--border-radius);
-}
-
-#game-output .input-prompt {
-    color: var(--primary-color);
-    margin: var(--spacing) 0;
+#game-output .system {
+    color: var(--text-muted);
+    font-style: italic;
 }
 
 #game-output .error {
-    color: #ff6b6b;
-    margin: var(--spacing) 0;
+    color: var(--primary);
 }
 
-#game-output .choice {
-    color: var(--text-secondary);
-    margin: 4px 0;
-    padding-left: var(--spacing);
+/* 终端菜单样式 */
+#game-output p:nth-child(odd) {
+    /* 保持默认 */
 }
 
-/* 模态对话框 */
-#modal-overlay {
+footer {
+    text-align: center;
+    padding: 16px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* ===== 模态对话框 ===== */
+.modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    animation: fadeIn 0.2s;
 }
 
-#modal {
-    background-color: var(--surface-color);
-    border-radius: var(--border-radius);
-    padding: var(--spacing);
-    min-width: 400px;
-    max-width: 600px;
+.modal-overlay.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 420px;
+    max-width: 640px;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px) scale(0.98);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing);
-    padding-bottom: var(--spacing);
-    border-bottom: 2px solid var(--primary-color);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
 }
 
 .modal-header h2 {
-    color: var(--primary-color);
-    font-size: 1.5rem;
+    color: var(--primary);
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
 .modal-body {
-    margin-bottom: var(--spacing);
+    padding: 20px 24px;
+    max-height: 50vh;
+    overflow-y: auto;
 }
 
 .modal-body p {
     white-space: pre-wrap;
     line-height: 1.6;
-    margin-bottom: var(--spacing);
+    margin-bottom: 12px;
 }
 
-#modal-choices {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing);
+/* 输入上下文区 */
+.input-context {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    max-height: 280px;
+    overflow-y: auto;
+    line-height: 1.6;
 }
 
-.choice-button {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: var(--spacing);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    text-align: left;
+.input-prompt-text {
+    color: var(--secondary);
+    font-weight: 600;
+    font-size: 0.95rem;
 }
 
-.choice-button:hover {
-    background-color: #ff5252;
-}
-
-.choice-button:active {
-    transform: scale(0.98);
-}
-
-#modal-input-group {
-    margin-top: var(--spacing);
+/* 输入框 */
+.modal-input-group {
+    padding: 0 24px 16px;
 }
 
 #modal-input {
     width: 100%;
-    padding: var(--spacing);
-    border: 2px solid var(--primary-color);
-    border-radius: var(--border-radius);
-    background-color: var(--background-color);
-    color: var(--text-color);
+    padding: 12px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
     font-size: 1rem;
+    font-family: var(--font);
+    transition: border-color 0.2s;
 }
 
 #modal-input:focus {
     outline: none;
-    border-color: var(--secondary-color);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(248, 81, 73, 0.15);
 }
 
-.modal-footer {
+/* 操作按钮 */
+.modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: var(--spacing);
-    padding-top: var(--spacing);
-    border-top: 2px solid var(--surface-color);
+    gap: 12px;
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
 }
 
-footer {
-    text-align: center;
-    padding: var(--spacing);
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-/* 消息框 */
-.message-box {
-    background-color: var(--surface-color);
-    border: 2px solid var(--primary-color);
-    border-radius: var(--border-radius);
-    padding: var(--spacing);
-    margin-bottom: var(--spacing);
-}
-
-.message-box h2 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing);
-}
-
-.message-box p {
-    white-space: pre-wrap;
-    line-height: 1.6;
-}
-
-/* 选择框 */
-.choice-box {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing);
-}
-
-.choice-button {
-    background-color: var(--primary-color);
-    color: white;
+.btn {
+    padding: 10px 24px;
     border: none;
-    padding: var(--spacing);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.2s;
+    font-family: var(--font);
 }
 
-.choice-button:hover {
-    background-color: #ff5252;
-}
-
-.choice-button:active {
-    transform: scale(0.98);
-}
-
-/* 输入框 */
-.input-box {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing);
-}
-
-.input-box input {
-    padding: var(--spacing);
-    border: 2px solid var(--primary-color);
-    border-radius: var(--border-radius);
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 1rem;
-}
-
-.input-box input:focus {
-    outline: none;
-    border-color: var(--secondary-color);
-}
-
-/* 按钮 */
-.button-group {
-    display: flex;
-    gap: var(--spacing);
-    justify-content: center;
-}
-
-.button {
-    background-color: var(--primary-color);
+.btn-primary {
+    background: var(--primary);
     color: white;
-    border: none;
-    padding: var(--spacing) 2 * var(--spacing);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-.button:hover {
-    background-color: #ff5252;
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
 }
 
-.button.secondary {
-    background-color: var(--secondary-color);
+.btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
 }
 
-.button.secondary:hover {
-    background-color: #3db8b0;
+.btn-secondary:hover {
+    background: var(--border);
 }
 
-/* 战斗信息 */
-.battle-info {
-    background-color: var(--surface-color);
-    border: 2px solid var(--secondary-color);
-    border-radius: var(--border-radius);
-    padding: var(--spacing);
-    margin-bottom: var(--spacing);
+.btn:active {
+    transform: translateY(0);
 }
 
-.battle-info h3 {
-    color: var(--secondary-color);
-    margin-bottom: var(--spacing);
-}
+/* ===== 响应式 ===== */
+@media (max-width: 640px) {
+    #game-container {
+        padding: 8px;
+    }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
     header {
         flex-direction: column;
-        gap: var(--spacing);
+        gap: 12px;
+        padding: 12px 16px;
     }
 
-    header h1 {
-        font-size: 1.5rem;
+    .header-right {
+        width: 100%;
+        justify-content: center;
     }
 
-    .button-group {
-        flex-direction: column;
+    .modal {
+        min-width: auto;
+        width: calc(100vw - 32px);
+        margin: 16px;
     }
+
+    #game-output {
+        padding: 14px 16px;
+        font-size: 0.82rem;
+    }
+
+    .btn {
+        padding: 12px 18px;
+    }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--surface-2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border);
 }
