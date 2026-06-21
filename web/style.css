@@ -195,6 +195,13 @@ main {
     word-break: break-word;
 }
 
+/* 游戏结束重启提示 */
+.restart-hint {
+    text-align: center;
+    padding: 24px;
+    margin-top: 16px;
+}
+
 #game-output .system {
     color: var(--text-muted);
     font-style: italic;

@@ -202,10 +202,22 @@ get_save_path = web_get_save_path
 `);
 
     // 运行游戏
+    // 游戏中使用 sys.exit() 表示正常结束（退出/死亡/通关/隐藏结局），
+    // 在 Web Worker 中 SystemExit 会抛出异常，需要捕获后当作正常结束处理。
     self.postMessage({ type: "status", message: "游戏启动中..." });
-    await pyodide.runPythonAsync(`
+    try {
+        await pyodide.runPythonAsync(`
 game = Game()
 game.run()
 `);
+    } catch (err) {
+        // 捕获 SystemExit — 游戏正常结束（死亡/通关/退出）
+        if (err && (err.name === "PythonError" || String(err).includes("SystemExit"))) {
+            self.postMessage({ type: "gameover" });
+        } else {
+            throw err;
+        }
+        return;
+    }
     self.postMessage({ type: "done" });
 }

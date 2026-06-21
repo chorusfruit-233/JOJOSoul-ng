@@ -80,6 +80,12 @@ function handleMessage(msg) {
 
         case "done":
             appendOutput("游戏已结束。", "system");
+            showRestartHint();
+            break;
+
+        case "gameover":
+            appendOutput("游戏结束。", "system");
+            showRestartHint();
             break;
 
         case "error":
@@ -215,6 +221,18 @@ function sendInputResult(value) {
     // 唤醒 Worker 中阻塞的 Atomics.wait
     Atomics.store(sharedView, 0, 1);
     Atomics.notify(sharedView, 0, 1);
+}
+
+// ---- 游戏结束提示 ----
+function showRestartHint() {
+    const output = $output();
+    const div = document.createElement("div");
+    div.className = "restart-hint";
+    div.innerHTML =
+        '<button class="btn btn-primary" onclick="location.reload()">' +
+        "重新开始</button>";
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
 }
 
 // ---- 错误处理 ----
