@@ -181,14 +181,46 @@ class WebFile:
     def __init__(self, path, mode='r'):
         self.path = path
         self.mode = mode
-        self.content = web_storage.read(path) or ''
+        # 写模式清空旧内容，读模式加载已有内容
+        if 'w' in self.mode:
+            self.content = ''
+        else:
+            self.content = web_storage.read(path) or ''
+        self._lines = None
+        self._line_idx = 0
+
     def read(self):
         return self.content
+
     def write(self, content):
-        self.content += content
+        self.content += str(content)
+
     def close(self):
         if 'w' in self.mode:
             web_storage.write(self.path, self.content)
+
+    # 上下文管理器协议（支持 with open(...) as f:）
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+        return False
+
+    # 迭代器协议（支持 for line in f:）
+    def __iter__(self):
+        self._lines = self.content.split('\\n')
+        self._line_idx = 0
+        return self
+
+    def __next__(self):
+        if self._lines is None:
+            self._lines = self.content.split('\\n')
+        if self._line_idx >= len(self._lines):
+            raise StopIteration
+        line = self._lines[self._line_idx]
+        self._line_idx += 1
+        return line
 
 def web_open(path, mode='r'):
     if 'savegame' in str(path):
